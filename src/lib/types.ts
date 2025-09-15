@@ -39,3 +39,14 @@ export type NavItem = {
     icon: LucideIcon;
     label: string;
 }
+
+export type BudgetExpense = {
+  category: string;
+  amount: number;
+};
+
+export type Budget = {
+  id: string | number;
+  name: string;
+  expenses: BudgetExpense[];
+};

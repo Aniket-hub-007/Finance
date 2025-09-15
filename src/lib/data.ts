@@ -1,4 +1,4 @@
-import type { Transaction, SavingsGoal, Debt, NavItem } from './types';
+import type { Transaction, SavingsGoal, Debt, NavItem, Budget } from './types';
 import {
   LayoutDashboard,
   ArrowRightLeft,
@@ -44,4 +44,25 @@ export const debts: Debt[] = [
     { id: 1, name: 'Student Loan', initialAmount: 40000, currentBalance: 25500, interestRate: 4.5 },
     { id: 2, name: 'Car Loan', initialAmount: 25000, currentBalance: 12000, interestRate: 3.2 },
     { id: 3, name: 'Credit Card', initialAmount: 5000, currentBalance: 2300, interestRate: 18.9 },
+];
+
+export const budgets: Budget[] = [
+    { 
+        id: 1, 
+        name: 'Monthly Household Budget', 
+        expenses: [
+            { category: 'Rent', amount: 1500 },
+            { category: 'Groceries', amount: 500 },
+            { category: 'Utilities', amount: 200 },
+        ]
+    },
+    { 
+        id: 2, 
+        name: 'Vacation Fund', 
+        expenses: [
+            { category: 'Flights', amount: 1200 },
+            { category: 'Hotels', amount: 1000 },
+            { category: 'Activities', amount: 600 },
+        ]
+    }
 ];

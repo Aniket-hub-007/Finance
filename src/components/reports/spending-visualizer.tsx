@@ -69,7 +69,7 @@ export function SpendingVisualizer() {
           <ResponsiveContainer width="100%" height={350}>
             <BarChart data={chartData}>
               <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
-              <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `$${value}`} />
+              <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `₹${value}`} />
               <Tooltip content={<ChartTooltipContent />} />
               <Bar dataKey="groceries" fill="var(--color-groceries)" radius={4} />
               <Bar dataKey="transport" fill="var(--color-transport)" radius={4} />
@@ -103,7 +103,7 @@ export function SpendingVisualizer() {
           <ResponsiveContainer width="100%" height={350}>
             <LineChart data={chartData}>
               <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
-              <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `$${value}`} />
+              <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `₹${value}`} />
               <Tooltip content={<ChartTooltipContent />} />
               <Line type="monotone" dataKey="groceries" stroke="var(--color-groceries)" />
               <Line type="monotone" dataKey="transport" stroke="var(--color-transport)" />

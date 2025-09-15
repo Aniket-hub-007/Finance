@@ -30,14 +30,14 @@ export default function GoalsPage() {
                                 </div>
                                 <div className="flex-1">
                                     <CardTitle className="font-headline">{goal.name}</CardTitle>
-                                    <CardDescription>Target: ${goal.targetAmount.toLocaleString()}</CardDescription>
+                                    <CardDescription>Target: ₹{goal.targetAmount.toLocaleString()}</CardDescription>
                                 </div>
                             </CardHeader>
                             <CardContent>
                                 <div className="space-y-2">
                                     <Progress value={progress} />
                                     <p className="text-sm text-muted-foreground">
-                                        <span className="font-bold text-foreground">${goal.currentAmount.toLocaleString()}</span> saved ({progress.toFixed(1)}%)
+                                        <span className="font-bold text-foreground">₹{goal.currentAmount.toLocaleString()}</span> saved ({progress.toFixed(1)}%)
                                     </p>
                                 </div>
                             </CardContent>

@@ -163,7 +163,7 @@ export function BudgetSuggester() {
                         {Object.entries(suggestion.suggestedBudget).map(([key, value]) => (
                             <li key={key} className="flex justify-between items-center text-sm">
                                 <span className="capitalize text-muted-foreground">{key.replace(/([A-Z])/g, ' $1').trim()}</span>
-                                <span className="font-medium">${value.toLocaleString()}</span>
+                                <span className="font-medium">₹{value.toLocaleString()}</span>
                             </li>
                         ))}
                     </ul>

@@ -31,7 +31,7 @@ export default function DashboardPage() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${totalBalance.toLocaleString()}</div>
+            <div className="text-2xl font-bold">₹{totalBalance.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">+20.1% from last month</p>
           </CardContent>
         </Card>
@@ -41,7 +41,7 @@ export default function DashboardPage() {
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">+${monthlyIncome.toLocaleString()}</div>
+            <div className="text-2xl font-bold text-green-600">+₹{monthlyIncome.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">This month</p>
           </CardContent>
         </Card>
@@ -51,7 +51,7 @@ export default function DashboardPage() {
             <TrendingDown className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">-${Math.abs(monthlyExpenses).toLocaleString()}</div>
+            <div className="text-2xl font-bold text-red-600">-₹{Math.abs(monthlyExpenses).toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">This month</p>
           </CardContent>
         </Card>
@@ -94,7 +94,7 @@ export default function DashboardPage() {
                         <div className="font-medium">{tx.description}</div>
                       </TableCell>
                       <TableCell className={`text-right font-medium ${tx.type === 'income' ? 'text-green-600' : ''}`}>
-                        {tx.type === 'income' ? '+' : '-'}${Math.abs(tx.amount).toFixed(2)}
+                        {tx.type === 'income' ? '+' : '-'}₹{Math.abs(tx.amount).toFixed(2)}
                       </TableCell>
                       <TableCell className="hidden sm:table-cell">{tx.date}</TableCell>
                     </TableRow>
@@ -119,7 +119,7 @@ export default function DashboardPage() {
                   <div className="flex items-center justify-between">
                     <span className="font-medium">{goal.name}</span>
                     <span className="text-sm text-muted-foreground">
-                      ${goal.currentAmount.toLocaleString()} / ${goal.targetAmount.toLocaleString()}
+                      ₹{goal.currentAmount.toLocaleString()} / ₹{goal.targetAmount.toLocaleString()}
                     </span>
                   </div>
                   <Progress value={(goal.currentAmount / goal.targetAmount) * 100} />

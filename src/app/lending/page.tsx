@@ -37,7 +37,7 @@ export default function LendingPage() {
                                 <TableCell className="font-medium">{loan.borrower}</TableCell>
                                 <TableCell>{loan.status}</TableCell>
                                 <TableCell>{loan.date}</TableCell>
-                                <TableCell className="text-right">${loan.amount.toFixed(2)}</TableCell>
+                                <TableCell className="text-right">₹{loan.amount.toFixed(2)}</TableCell>
                             </TableRow>
                        ))}
                     </TableBody>

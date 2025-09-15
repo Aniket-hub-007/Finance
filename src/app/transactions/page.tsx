@@ -56,7 +56,7 @@ export default function TransactionsPage() {
                 </TableCell>
                 <TableCell>{tx.date}</TableCell>
                 <TableCell className={`text-right font-medium ${tx.type === 'income' ? 'text-green-600' : ''}`}>
-                  {tx.type === 'income' ? '+' : '-'}${Math.abs(tx.amount).toFixed(2)}
+                  {tx.type === 'income' ? '+' : '-'}₹{Math.abs(tx.amount).toFixed(2)}
                 </TableCell>
               </TableRow>
             ))}

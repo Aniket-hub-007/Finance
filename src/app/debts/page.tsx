@@ -34,9 +34,9 @@ export default function DebtsPage() {
                                 </div>
                             </CardHeader>
                             <CardContent className="space-y-2">
-                                <div className="text-2xl font-bold">${debt.currentBalance.toLocaleString()}</div>
+                                <div className="text-2xl font-bold">₹{debt.currentBalance.toLocaleString()}</div>
                                 <p className="text-xs text-muted-foreground">
-                                    Remaining of ${debt.initialAmount.toLocaleString()}
+                                    Remaining of ₹{debt.initialAmount.toLocaleString()}
                                 </p>
                                 <Progress value={progress} />
                                 <p className="text-sm text-muted-foreground">{progress.toFixed(1)}% paid off</p>

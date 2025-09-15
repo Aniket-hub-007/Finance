@@ -8,6 +8,7 @@ export type Transaction = {
   date: string;
   category: string;
   type: 'income' | 'expense';
+  paymentMethod: 'card' | 'cash' | 'upi' | 'other';
 };
 
 export type SavingsGoal = {

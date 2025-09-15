@@ -20,16 +20,16 @@ export const navItems: NavItem[] = [
 ];
 
 export const transactions: Transaction[] = [
-    { id: 1, description: 'Grocery Shopping', amount: -75.6, date: '2024-07-28', type: 'expense', category: 'Food' },
-    { id: 2, description: 'Salary', amount: 3000, date: '2024-07-25', type: 'income', category: 'Job' },
-    { id: 3, description: 'Netflix Subscription', amount: -15.99, date: '2024-07-24', type: 'expense', category: 'Entertainment' },
-    { id: 4, description: 'Dinner with friends', amount: -54.2, date: '2024-07-22', type: 'expense', category: 'Social' },
-    { id: 5, description: 'Freelance Project', amount: 500, date: '2024-07-20', type: 'income', category: 'Side Hustle' },
-    { id: 6, description: 'Gasoline', amount: -45.00, date: '2024-07-19', type: 'expense', category: 'Transport' },
-    { id: 7, description: 'Electricity Bill', amount: -120.50, date: '2024-07-15', type: 'expense', category: 'Utilities' },
-    { id: 8, description: 'Stock Dividend', amount: 85.00, date: '2024-07-14', type: 'income', category: 'Investments' },
-    { id: 9, description: 'New Shoes', amount: -150.00, date: '2024-07-12', type: 'expense', category: 'Shopping' },
-    { id: 10, description: 'Rent', amount: -1200.00, date: '2024-07-01', type: 'expense', category: 'Housing' },
+    { id: 1, description: 'Grocery Shopping', amount: -75.6, date: '2024-07-28', type: 'expense', category: 'Food', paymentMethod: 'card' },
+    { id: 2, description: 'Salary', amount: 3000, date: '2024-07-25', type: 'income', category: 'Job', paymentMethod: 'other' },
+    { id: 3, description: 'Netflix Subscription', amount: -15.99, date: '2024-07-24', type: 'expense', category: 'Entertainment', paymentMethod: 'card' },
+    { id: 4, description: 'Dinner with friends', amount: -54.2, date: '2024-07-22', type: 'expense', category: 'Social', paymentMethod: 'upi' },
+    { id: 5, description: 'Freelance Project', amount: 500, date: '2024-07-20', type: 'income', category: 'Side Hustle', paymentMethod: 'other' },
+    { id: 6, description: 'Gasoline', amount: -45.00, date: '2024-07-19', type: 'expense', category: 'Transport', paymentMethod: 'card' },
+    { id: 7, description: 'Electricity Bill', amount: -120.50, date: '2024-07-15', type: 'expense', category: 'Utilities', paymentMethod: 'upi' },
+    { id: 8, description: 'Stock Dividend', amount: 85.00, date: '2024-07-14', type: 'income', category: 'Investments', paymentMethod: 'other' },
+    { id: 9, description: 'New Shoes', amount: -150.00, date: '2024-07-12', type: 'expense', category: 'Shopping', paymentMethod: 'card' },
+    { id: 10, description: 'Rent', amount: -1200.00, date: '2024-07-01', type: 'expense', category: 'Housing', paymentMethod: 'other' },
 ];
 
 export const recentTransactions = transactions;

@@ -38,16 +38,19 @@ export function TransactionForm({
   const { register, handleSubmit, control, reset, formState: { errors } } = useForm<Transaction>();
 
   useEffect(() => {
-    if (transaction) {
-      reset(transaction);
-    } else {
-      reset({
-        description: '',
-        amount: 0,
-        date: new Date().toISOString().split('T')[0],
-        category: '',
-        type: 'expense',
-      });
+    if (isOpen) {
+      if (transaction) {
+        reset(transaction);
+      } else {
+        reset({
+          description: '',
+          amount: 0,
+          date: new Date().toISOString().split('T')[0],
+          category: '',
+          type: 'expense',
+          paymentMethod: 'card'
+        });
+      }
     }
   }, [transaction, reset, isOpen]);
 
@@ -65,7 +68,7 @@ export function TransactionForm({
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="amount" className="text-right">Amount</Label>
-              <Input id="amount" type="number" {...register('amount', { required: true, valueAsNumber: true })} className="col-span-3" />
+              <Input id="amount" type="number" step="0.01" {...register('amount', { required: true, valueAsNumber: true })} className="col-span-3" />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="date" className="text-right">Date</Label>
@@ -82,13 +85,34 @@ export function TransactionForm({
                 control={control}
                 defaultValue="expense"
                 render={({ field }) => (
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select onValueChange={field.onChange} value={field.value}>
                     <SelectTrigger className="col-span-3">
                       <SelectValue placeholder="Select type" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="income">Income</SelectItem>
                       <SelectItem value="expense">Expense</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="paymentMethod" className="text-right">Payment</Label>
+              <Controller
+                name="paymentMethod"
+                control={control}
+                defaultValue="card"
+                render={({ field }) => (
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <SelectTrigger className="col-span-3">
+                      <SelectValue placeholder="Select payment method" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="card">Card</SelectItem>
+                      <SelectItem value="cash">Cash</SelectItem>
+                      <SelectItem value="upi">UPI</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
                     </SelectContent>
                   </Select>
                 )}

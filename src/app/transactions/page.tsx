@@ -47,7 +47,7 @@ export default function TransactionsPage() {
         if(selectedTransaction) {
             setTransactions(transactions.map(t => t.id === transaction.id ? transaction : t));
         } else {
-            setTransactions([...transactions, { ...transaction, id: Date.now() }]);
+            setTransactions([{ ...transaction, id: Date.now() }, ...transactions]);
         }
         setIsFormOpen(false);
     }
@@ -73,6 +73,7 @@ export default function TransactionsPage() {
               <TableHead>Description</TableHead>
               <TableHead>Category</TableHead>
               <TableHead>Type</TableHead>
+              <TableHead>Payment</TableHead>
               <TableHead>Date</TableHead>
               <TableHead className="text-right">Amount</TableHead>
               <TableHead className="text-right">Actions</TableHead>
@@ -86,12 +87,15 @@ export default function TransactionsPage() {
                   <Badge variant="outline">{tx.category}</Badge>
                 </TableCell>
                 <TableCell>
-                   <Badge variant={tx.type === 'income' ? 'default' : 'secondary'} className={tx.type === 'income' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
+                   <Badge variant={tx.type === 'income' ? 'default' : 'secondary'} className={`capitalize ${tx.type === 'income' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
                     {tx.type}
                   </Badge>
                 </TableCell>
+                <TableCell>
+                  <Badge variant="outline" className="capitalize">{tx.paymentMethod}</Badge>
+                </TableCell>
                 <TableCell>{tx.date}</TableCell>
-                <TableCell className={`text-right font-medium ${tx.type === 'income' ? 'text-green-600' : ''}`}>
+                <TableCell className={`text-right font-medium ${tx.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
                   {tx.type === 'income' ? '+' : '-'}₹{Math.abs(tx.amount).toFixed(2)}
                 </TableCell>
                 <TableCell className="text-right">

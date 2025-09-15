@@ -8,14 +8,11 @@ import { PlusCircle } from "lucide-react";
 import { useState } from "react";
 import type { Lending } from "@/lib/types";
 import { LendingForm } from "@/components/lending/lending-form";
+import { useAppContext } from "@/context/app-provider";
 
-const initialLending: Lending[] = [
-    { id: 1, borrower: 'John Doe', amount: 500, status: 'Paid', date: '2024-05-10' },
-    { id: 2, borrower: 'Jane Smith', amount: 1200, status: 'Pending', date: '2024-07-01' },
-];
 
 export default function LendingPage() {
-    const [loans, setLoans] = useState<Lending[]>(initialLending);
+    const { lending: loans, setLending: setLoans } = useAppContext() as any;
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [selectedLoan, setSelectedLoan] = useState<Lending | undefined>(undefined);
 
@@ -30,12 +27,12 @@ export default function LendingPage() {
     }
 
     const handleDelete = (id: string | number) => {
-        setLoans(loans.filter(l => l.id !== id));
+        setLoans(loans.filter((l: Lending) => l.id !== id));
     }
 
     const handleFormSubmit = (loan: Lending) => {
         if(selectedLoan) {
-            setLoans(loans.map(l => l.id === loan.id ? loan : l));
+            setLoans(loans.map((l: Lending) => l.id === loan.id ? loan : l));
         } else {
             setLoans([...loans, { ...loan, id: Date.now() }]);
         }
@@ -66,7 +63,7 @@ export default function LendingPage() {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                       {loans.map(loan => (
+                       {loans.map((loan: Lending) => (
                             <TableRow key={loan.id}>
                                 <TableCell className="font-medium">{loan.borrower}</TableCell>
                                 <TableCell>{loan.status}</TableCell>

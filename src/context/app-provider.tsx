@@ -2,8 +2,13 @@
 'use client';
 
 import React, { createContext, useContext, useState, ReactNode } from 'react';
-import type { Transaction, Balances, SavingsGoal } from '@/lib/types';
-import { transactions as initialTransactions, savingsGoals as initialSavingsGoals } from '@/lib/data';
+import type { Transaction, Balances, SavingsGoal, Debt, Lending } from '@/lib/types';
+import { 
+  transactions as initialTransactions, 
+  savingsGoals as initialSavingsGoals,
+  debts as initialDebts,
+  lending as initialLending
+} from '@/lib/data';
 
 interface AppContextType {
   transactions: Transaction[];
@@ -13,6 +18,8 @@ interface AppContextType {
   balances: Balances;
   setBalances: (balances: Balances) => void;
   savingsGoals: SavingsGoal[];
+  debts: Debt[];
+  lending: Lending[];
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -25,6 +32,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     cash: 850.00,
   });
   const [savingsGoals, setSavingsGoals] = useState<SavingsGoal[]>(initialSavingsGoals);
+  const [debts, setDebts] = useState<Debt[]>(initialDebts);
+  const [lending, setLending] = useState<Lending[]>(initialLending);
   
   const updateBalanceOnTransaction = (transaction: Transaction, factor: 1 | -1) => {
     const amount = transaction.type === 'income' ? transaction.amount : -transaction.amount;
@@ -80,6 +89,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     balances,
     setBalances,
     savingsGoals,
+    debts,
+    lending
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

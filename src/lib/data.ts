@@ -1,4 +1,5 @@
-import type { Transaction, SavingsGoal, Debt, NavItem, Budget } from './types';
+
+import type { Transaction, SavingsGoal, Debt, NavItem, Budget, Lending } from './types';
 import {
   LayoutDashboard,
   ArrowRightLeft,
@@ -65,4 +66,9 @@ export const budgets: Budget[] = [
             { category: 'Activities', amount: 600 },
         ]
     }
+];
+
+export const lending: Lending[] = [
+    { id: 1, borrower: 'John Doe', amount: 500, status: 'Paid', date: '2024-05-10' },
+    { id: 2, borrower: 'Jane Smith', amount: 1200, status: 'Pending', date: '2024-07-01' },
 ];

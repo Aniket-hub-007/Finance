@@ -17,9 +17,8 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Wallet, Smartphone, Landmark, Pencil } from 'lucide-react';
+import { Wallet, Smartphone, Landmark, Pencil, PiggyBank, CreditCard, TrendingUp, TrendingDown } from 'lucide-react';
 import { Line, LineChart } from 'recharts';
-import { recentTransactions, transactions, savingsGoals } from '@/lib/data';
 import { ChartTooltipContent, ChartContainer, ChartConfig, ChartTooltip } from '@/components/ui/chart';
 import { subDays, format } from 'date-fns';
 import { useState } from 'react';
@@ -43,10 +42,15 @@ const chartConfig = {
 } satisfies ChartConfig;
 
 export default function DashboardPage() {
-  const { balances, setBalances, transactions, savingsGoals } = useAppContext();
+  const { balances, setBalances, transactions, savingsGoals, debts, lending } = useAppContext();
   const [isEditFormOpen, setIsEditFormOpen] = useState(false);
 
   const totalBalance = balances.bank + balances.upi + balances.cash;
+  const totalExpenses = transactions.filter(t => t.type === 'expense').reduce((acc, t) => acc + Math.abs(t.amount), 0);
+  const totalSavings = savingsGoals.reduce((acc, goal) => acc + goal.currentAmount, 0);
+  const totalDebts = debts.reduce((acc, debt) => acc + debt.currentBalance, 0);
+  const totalLent = lending.filter(l => l.status === 'Pending').reduce((acc, l) => acc + l.amount, 0);
+
 
   const handleBalanceUpdate = (newBalances: { bank: number; upi: number; cash: number }) => {
     setBalances(newBalances);
@@ -103,7 +107,7 @@ export default function DashboardPage() {
 
   return (
     <>
-      <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Balance</CardTitle>
@@ -147,8 +151,51 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+
+       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mt-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Expenses</CardTitle>
+            <TrendingDown className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-destructive">₹{totalExpenses.toLocaleString()}</div>
+            <p className="text-xs text-muted-foreground">This month</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Savings</CardTitle>
+            <PiggyBank className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-accent">₹{totalSavings.toLocaleString()}</div>
+            <p className="text-xs text-muted-foreground">Across all goals</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Debt</CardTitle>
+            <CreditCard className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">₹{totalDebts.toLocaleString()}</div>
+            <p className="text-xs text-muted-foreground">Remaining balance</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Money Lent</CardTitle>
+            <Landmark className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">₹{totalLent.toLocaleString()}</div>
+            <p className="text-xs text-muted-foreground">Pending repayment</p>
+          </CardContent>
+        </Card>
+      </div>
       
-       <Tabs defaultValue="monthly" className="w-full">
+       <Tabs defaultValue="monthly" className="w-full mt-8">
             <TabsList className="grid w-full grid-cols-3 md:w-[400px]">
                 <TabsTrigger value="daily">Daily</TabsTrigger>
                 <TabsTrigger value="weekly">Weekly</TabsTrigger>

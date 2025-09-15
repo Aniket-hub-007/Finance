@@ -15,11 +15,13 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { getBudgetSuggestion, FormSchema } from '@/app/budget/actions';
+import { getBudgetSuggestion } from '@/app/budget/actions';
+import { FormSchema } from '@/app/budget/types';
 import type { SuggestBudgetOutput } from '@/ai/flows/suggest-budget-from-financial-data';
 import { Loader2, PlusCircle, XCircle } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { Separator } from '../ui/separator';
+import { Label } from '../ui/label';
 
 export function BudgetSuggester() {
   const [isLoading, setIsLoading] = useState(false);

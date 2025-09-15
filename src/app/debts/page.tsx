@@ -1,10 +1,43 @@
+
+'use client';
+
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { debts } from "@/lib/data";
+import { debts as initialDebts } from "@/lib/data";
 import { CreditCard, PlusCircle } from "lucide-react";
+import { useState } from "react";
+import type { Debt } from "@/lib/types";
+import { DebtForm } from "@/components/debts/debt-form";
 
 export default function DebtsPage() {
+    const [debts, setDebts] = useState<Debt[]>(initialDebts);
+    const [isFormOpen, setIsFormOpen] = useState(false);
+    const [selectedDebt, setSelectedDebt] = useState<Debt | undefined>(undefined);
+
+     const handleAdd = () => {
+        setSelectedDebt(undefined);
+        setIsFormOpen(true);
+    }
+
+    const handleEdit = (debt: Debt) => {
+        setSelectedDebt(debt);
+        setIsFormOpen(true);
+    }
+
+    const handleDelete = (id: string | number) => {
+        setDebts(debts.filter(d => d.id !== id));
+    }
+
+    const handleFormSubmit = (debt: Debt) => {
+        if(selectedDebt) {
+            setDebts(debts.map(d => d.id === debt.id ? debt : d));
+        } else {
+            setDebts([...debts, { ...debt, id: Date.now() }]);
+        }
+        setIsFormOpen(false);
+    }
+
     return (
         <div>
             <div className="flex items-center justify-between mb-8">
@@ -12,7 +45,7 @@ export default function DebtsPage() {
                     <h1 className="text-3xl font-headline font-semibold">Debt Management</h1>
                     <p className="text-muted-foreground">Add debts and track your payoff progress.</p>
                 </div>
-                 <Button size="sm" className="gap-1">
+                 <Button size="sm" className="gap-1" onClick={handleAdd}>
                     <PlusCircle className="h-3.5 w-3.5" />
                     New Debt
                 </Button>
@@ -41,10 +74,21 @@ export default function DebtsPage() {
                                 <Progress value={progress} />
                                 <p className="text-sm text-muted-foreground">{progress.toFixed(1)}% paid off</p>
                             </CardContent>
+                             <CardFooter className="flex justify-end gap-2">
+                                <Button variant="ghost" size="sm" onClick={() => handleEdit(debt)}>Edit</Button>
+                                <Button variant="ghost" size="sm" className="text-destructive" onClick={() => handleDelete(debt.id)}>Delete</Button>
+                            </CardFooter>
                         </Card>
                     );
                 })}
             </div>
+            <DebtForm 
+                isOpen={isFormOpen} 
+                onClose={() => setIsFormOpen(false)} 
+                onSubmit={handleFormSubmit}
+                debt={selectedDebt}
+            />
         </div>
     );
 }
+

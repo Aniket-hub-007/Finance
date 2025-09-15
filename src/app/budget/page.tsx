@@ -1,6 +1,5 @@
-import { BudgetSuggester } from "@/components/budget/budget-suggester";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
+import { BudgetSuggester } from "@/components/budget/budget-suggester";
 
 export default function BudgetPage() {
     return (

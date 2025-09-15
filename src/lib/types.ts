@@ -1,3 +1,4 @@
+
 import type { LucideIcon } from "lucide-react";
 
 export type Transaction = {
@@ -24,6 +25,14 @@ export type Debt = {
   currentBalance: number;
   interestRate: number;
 };
+
+export type Lending = {
+    id: string | number;
+    borrower: string;
+    amount: number;
+    status: 'Pending' | 'Paid';
+    date: string;
+}
 
 export type NavItem = {
     href: string;

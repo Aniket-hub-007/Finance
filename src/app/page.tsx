@@ -17,12 +17,14 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
-import { Wallet, Smartphone, Landmark, IndianRupee } from 'lucide-react';
+import { Wallet, Smartphone, Landmark, IndianRupee, Pencil } from 'lucide-react';
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Line, LineChart } from 'recharts';
 import { recentTransactions, transactions, savingsGoals } from '@/lib/data';
 import { ChartTooltipContent, ChartContainer, ChartConfig } from '@/components/ui/chart';
 import { subDays, format } from 'date-fns';
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { BalanceEditForm } from '@/components/dashboard/balance-edit-form';
 
 const chartConfig = {
   balance: {
@@ -40,10 +42,19 @@ const chartConfig = {
 } satisfies ChartConfig;
 
 export default function DashboardPage() {
-  const totalUpiBalance = 2500.50;
-  const totalCashBalance = 850.00;
-  const totalBankBalance = 12050.75;
-  const totalBalance = totalUpiBalance + totalCashBalance + totalBankBalance;
+  const [bankBalance, setBankBalance] = useState(12050.75);
+  const [upiBalance, setUpiBalance] = useState(2500.50);
+  const [cashBalance, setCashBalance] = useState(850.00);
+  const [isEditFormOpen, setIsEditFormOpen] = useState(false);
+
+  const totalBalance = bankBalance + upiBalance + cashBalance;
+
+  const handleBalanceUpdate = (newBalances: { bank: number; upi: number; cash: number }) => {
+    setBankBalance(newBalances.bank);
+    setUpiBalance(newBalances.upi);
+    setCashBalance(newBalances.cash);
+    setIsEditFormOpen(false);
+  };
 
   // Data processing for charts
   const today = new Date();
@@ -101,7 +112,9 @@ export default function DashboardPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Balance</CardTitle>
-            <IndianRupee className="h-4 w-4 text-muted-foreground" />
+            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setIsEditFormOpen(true)}>
+                <Pencil className="h-4 w-4 text-muted-foreground" />
+            </Button>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">₹{totalBalance.toLocaleString()}</div>
@@ -114,7 +127,7 @@ export default function DashboardPage() {
             <Landmark className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">₹{totalBankBalance.toLocaleString()}</div>
+            <div className="text-2xl font-bold">₹{bankBalance.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">In your bank accounts</p>
           </CardContent>
         </Card>
@@ -124,7 +137,7 @@ export default function DashboardPage() {
             <Smartphone className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">₹{totalUpiBalance.toLocaleString()}</div>
+            <div className="text-2xl font-bold">₹{upiBalance.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">In your UPI apps</p>
           </CardContent>
         </Card>
@@ -134,7 +147,7 @@ export default function DashboardPage() {
             <Wallet className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">₹{totalCashBalance.toLocaleString()}</div>
+            <div className="text-2xl font-bold">₹{cashBalance.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">Physical cash</p>
           </CardContent>
         </Card>
@@ -233,10 +246,16 @@ export default function DashboardPage() {
           </Card>
         </div>
       </div>
+      <BalanceEditForm
+        isOpen={isEditFormOpen}
+        onClose={() => setIsEditFormOpen(false)}
+        onSubmit={handleBalanceUpdate}
+        currentBalances={{
+          bank: bankBalance,
+          upi: upiBalance,
+          cash: cashBalance,
+        }}
+      />
     </>
   );
 }
-
-    
-
-    

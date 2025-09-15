@@ -21,8 +21,23 @@ import { Badge } from '@/components/ui/badge';
 import { Wallet, Smartphone, Landmark, IndianRupee } from 'lucide-react';
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Line, LineChart } from 'recharts';
 import { recentTransactions, transactions, savingsGoals } from '@/lib/data';
-import { ChartTooltipContent, ChartContainer } from '@/components/ui/chart';
+import { ChartTooltipContent, ChartContainer, ChartConfig } from '@/components/ui/chart';
 import { subDays, format } from 'date-fns';
+
+const chartConfig = {
+  balance: {
+    label: 'Balance',
+    color: 'hsl(var(--chart-1))',
+  },
+  expense: {
+    label: 'Expense',
+    color: 'hsl(var(--destructive))',
+  },
+  savings: {
+    label: 'Savings',
+    color: 'hsl(var(--chart-2))',
+  },
+} satisfies ChartConfig;
 
 export default function DashboardPage() {
   const totalUpiBalance = 2500.50;
@@ -64,17 +79,17 @@ export default function DashboardPage() {
             <CardTitle className="font-headline text-lg">{title}</CardTitle>
         </CardHeader>
         <CardContent>
-            <ResponsiveContainer width="100%" height={200}>
-                <LineChart data={data}>
+            <ChartContainer config={chartConfig} className="min-h-[200px] w-full">
+                <LineChart data={data} accessibilityLayer>
                     <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
                     <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `₹${value.toLocaleString()}`} />
                     <Tooltip 
                         content={<ChartTooltipContent />}
                         cursor={{fill: 'hsl(var(--muted))'}}
                     />
-                    <Line type="monotone" dataKey={key} stroke={color} fill={color} strokeWidth={2} dot={{r: 4}} />
+                    <Line type="monotone" dataKey={key} stroke={color} fill={color} strokeWidth={2} dot={{r: 4}} name={key} />
                 </LineChart>
-            </ResponsiveContainer>
+            </ChartContainer>
         </CardContent>
      </Card>
   );
@@ -221,5 +236,7 @@ export default function DashboardPage() {
     </>
   );
 }
+
+    
 
     

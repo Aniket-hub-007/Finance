@@ -51,3 +51,9 @@ export type Budget = {
   name: string;
   expenses: BudgetExpense[];
 };
+
+export type Balances = {
+  bank: number;
+  upi: number;
+  cash: number;
+};

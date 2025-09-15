@@ -14,22 +14,17 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useForm } from 'react-hook-form';
 import { useEffect } from 'react';
-
-type BalanceFormData = {
-  bank: number;
-  upi: number;
-  cash: number;
-};
+import type { Balances } from '@/lib/types';
 
 type BalanceEditFormProps = {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: BalanceFormData) => void;
-  currentBalances: BalanceFormData;
+  onSubmit: (data: Balances) => void;
+  currentBalances: Balances;
 };
 
 export function BalanceEditForm({ isOpen, onClose, onSubmit, currentBalances }: BalanceEditFormProps) {
-  const { register, handleSubmit, reset } = useForm<BalanceFormData>();
+  const { register, handleSubmit, reset } = useForm<Balances>();
 
   useEffect(() => {
     if (isOpen) {

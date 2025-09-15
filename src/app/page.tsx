@@ -25,6 +25,7 @@ import { subDays, format } from 'date-fns';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { BalanceEditForm } from '@/components/dashboard/balance-edit-form';
+import { useAppContext } from '@/context/app-provider';
 
 const chartConfig = {
   balance: {
@@ -42,17 +43,13 @@ const chartConfig = {
 } satisfies ChartConfig;
 
 export default function DashboardPage() {
-  const [bankBalance, setBankBalance] = useState(12050.75);
-  const [upiBalance, setUpiBalance] = useState(2500.50);
-  const [cashBalance, setCashBalance] = useState(850.00);
+  const { balances, setBalances, transactions, savingsGoals } = useAppContext();
   const [isEditFormOpen, setIsEditFormOpen] = useState(false);
 
-  const totalBalance = bankBalance + upiBalance + cashBalance;
+  const totalBalance = balances.bank + balances.upi + balances.cash;
 
   const handleBalanceUpdate = (newBalances: { bank: number; upi: number; cash: number }) => {
-    setBankBalance(newBalances.bank);
-    setUpiBalance(newBalances.upi);
-    setCashBalance(newBalances.cash);
+    setBalances(newBalances);
     setIsEditFormOpen(false);
   };
 
@@ -125,7 +122,7 @@ export default function DashboardPage() {
             <Landmark className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">₹{bankBalance.toLocaleString()}</div>
+            <div className="text-2xl font-bold">₹{balances.bank.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">In your bank accounts</p>
           </CardContent>
         </Card>
@@ -135,7 +132,7 @@ export default function DashboardPage() {
             <Smartphone className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">₹{upiBalance.toLocaleString()}</div>
+            <div className="text-2xl font-bold">₹{balances.upi.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">In your UPI apps</p>
           </CardContent>
         </Card>
@@ -145,7 +142,7 @@ export default function DashboardPage() {
             <Wallet className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">₹{cashBalance.toLocaleString()}</div>
+            <div className="text-2xl font-bold">₹{balances.cash.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">Physical cash</p>
           </CardContent>
         </Card>
@@ -198,7 +195,7 @@ export default function DashboardPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {recentTransactions.slice(0, 5).map((tx) => (
+                  {transactions.slice(0, 5).map((tx) => (
                     <TableRow key={tx.id}>
                       <TableCell>
                         <div className="font-medium">{tx.description}</div>
@@ -248,11 +245,7 @@ export default function DashboardPage() {
         isOpen={isEditFormOpen}
         onClose={() => setIsEditFormOpen(false)}
         onSubmit={handleBalanceUpdate}
-        currentBalances={{
-          bank: bankBalance,
-          upi: upiBalance,
-          cash: cashBalance,
-        }}
+        currentBalances={balances}
       />
     </>
   );

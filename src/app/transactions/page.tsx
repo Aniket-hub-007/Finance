@@ -19,13 +19,13 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { PlusCircle } from 'lucide-react';
-import { transactions as initialTransactions } from '@/lib/data';
 import { useState } from 'react';
 import type { Transaction } from '@/lib/types';
 import { TransactionForm } from '@/components/transactions/transaction-form';
+import { useAppContext } from '@/context/app-provider';
 
 export default function TransactionsPage() {
-    const [transactions, setTransactions] = useState<Transaction[]>(initialTransactions);
+    const { transactions, addTransaction, updateTransaction, deleteTransaction } = useAppContext();
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [selectedTransaction, setSelectedTransaction] = useState<Transaction | undefined>(undefined);
 
@@ -40,14 +40,17 @@ export default function TransactionsPage() {
     }
 
     const handleDelete = (id: string | number) => {
-        setTransactions(transactions.filter(t => t.id !== id));
+        const transactionToDelete = transactions.find(t => t.id === id);
+        if (transactionToDelete) {
+            deleteTransaction(transactionToDelete);
+        }
     }
 
     const handleFormSubmit = (transaction: Transaction) => {
         if(selectedTransaction) {
-            setTransactions(transactions.map(t => t.id === transaction.id ? transaction : t));
+            updateTransaction(transaction);
         } else {
-            setTransactions([{ ...transaction, id: Date.now() }, ...transactions]);
+            addTransaction({ ...transaction, id: Date.now() });
         }
         setIsFormOpen(false);
     }

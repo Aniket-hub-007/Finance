@@ -17,10 +17,10 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Wallet, Smartphone, Landmark, IndianRupee, Pencil } from 'lucide-react';
-import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Line, LineChart } from 'recharts';
+import { Wallet, Smartphone, Landmark, Pencil } from 'lucide-react';
+import { Line, LineChart } from 'recharts';
 import { recentTransactions, transactions, savingsGoals } from '@/lib/data';
-import { ChartTooltipContent, ChartContainer, ChartConfig } from '@/components/ui/chart';
+import { ChartTooltipContent, ChartContainer, ChartConfig, ChartTooltip } from '@/components/ui/chart';
 import { subDays, format } from 'date-fns';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -92,9 +92,7 @@ export default function DashboardPage() {
         <CardContent>
             <ChartContainer config={chartConfig} className="min-h-[200px] w-full">
                 <LineChart data={data} accessibilityLayer>
-                    <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
-                    <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `₹${value.toLocaleString()}`} />
-                    <Tooltip 
+                    <ChartTooltip 
                         content={<ChartTooltipContent />}
                         cursor={{fill: 'hsl(var(--muted))'}}
                     />
@@ -206,7 +204,7 @@ export default function DashboardPage() {
                         <div className="font-medium">{tx.description}</div>
                         <div className="text-xs text-muted-foreground">{tx.date}</div>
                       </TableCell>
-                      <TableCell className={`text-right font-medium ${tx.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
+                      <TableCell className={`text-right font-medium ${tx.type === 'income' ? 'text-accent' : 'text-destructive'}`}>
                         {tx.type === 'income' ? '+' : '-'}₹{Math.abs(tx.amount).toFixed(2)}
                       </TableCell>
                     </TableRow>

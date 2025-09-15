@@ -87,7 +87,7 @@ export default function TransactionsPage() {
                   <Badge variant="outline">{tx.category}</Badge>
                 </TableCell>
                 <TableCell>
-                   <Badge variant={tx.type === 'income' ? 'default' : 'secondary'} className={`capitalize ${tx.type === 'income' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                   <Badge variant={tx.type === 'income' ? 'default' : 'destructive'} className="capitalize">
                     {tx.type}
                   </Badge>
                 </TableCell>
@@ -95,7 +95,7 @@ export default function TransactionsPage() {
                   <Badge variant="outline" className="capitalize">{tx.paymentMethod}</Badge>
                 </TableCell>
                 <TableCell>{tx.date}</TableCell>
-                <TableCell className={`text-right font-medium ${tx.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
+                <TableCell className={`text-right font-medium ${tx.type === 'income' ? 'text-accent' : 'text-destructive'}`}>
                   {tx.type === 'income' ? '+' : '-'}₹{Math.abs(tx.amount).toFixed(2)}
                 </TableCell>
                 <TableCell className="text-right">

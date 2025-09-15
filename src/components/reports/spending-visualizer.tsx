@@ -70,7 +70,7 @@ export function SpendingVisualizer() {
             <BarChart data={chartData}>
               <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
               <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `₹${value}`} />
-              <Tooltip content={<ChartTooltipContent />} />
+              <ChartTooltip content={<ChartTooltipContent />} />
               <Bar dataKey="groceries" fill="var(--color-groceries)" radius={4} />
               <Bar dataKey="transport" fill="var(--color-transport)" radius={4} />
               <Bar dataKey="entertainment" fill="var(--color-entertainment)" radius={4} />
@@ -85,7 +85,7 @@ export function SpendingVisualizer() {
         <ChartContainer config={chartConfig} className="min-h-[200px] w-full">
             <ResponsiveContainer width="100%" height={350}>
                 <PieChart>
-                    <Tooltip content={<ChartTooltipContent nameKey="value" />} />
+                    <ChartTooltip content={<ChartTooltipContent nameKey="value" />} />
                     <Pie data={chartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={120}>
                         {chartData.map((entry, index) => (
                            <Cell key={`cell-${index}`} fill={chartConfig[entry.name as keyof typeof chartConfig]?.color || '#8884d8'} />
@@ -104,7 +104,7 @@ export function SpendingVisualizer() {
             <LineChart data={chartData}>
               <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
               <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `₹${value}`} />
-              <Tooltip content={<ChartTooltipContent />} />
+              <ChartTooltip content={<ChartTooltipContent />} />
               <Line type="monotone" dataKey="groceries" stroke="var(--color-groceries)" />
               <Line type="monotone" dataKey="transport" stroke="var(--color-transport)" />
               <Line type="monotone" dataKey="entertainment" stroke="var(--color-entertainment)" />

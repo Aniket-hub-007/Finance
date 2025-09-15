@@ -16,10 +16,13 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Wallet, Smartphone, Landmark, IndianRupee } from 'lucide-react';
-import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
-import { savingsGoals, recentTransactions } from '@/lib/data';
+import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Line, LineChart } from 'recharts';
+import { recentTransactions, transactions, savingsGoals } from '@/lib/data';
+import { ChartTooltipContent, ChartContainer } from '@/components/ui/chart';
+import { subDays, format } from 'date-fns';
 
 export default function DashboardPage() {
   const totalUpiBalance = 2500.50;
@@ -27,12 +30,55 @@ export default function DashboardPage() {
   const totalBankBalance = 12050.75;
   const totalBalance = totalUpiBalance + totalCashBalance + totalBankBalance;
 
-  const monthlyChartData = [
-    { month: 'Apr', income: 4000, expense: 2400 },
-    { month: 'May', income: 3000, expense: 1398 },
-    { month: 'Jun', income: 5000, expense: 3800 },
-    { month: 'Jul', income: 4780, expense: 2908 },
+  // Data processing for charts
+  const today = new Date();
+  const dailyData = Array.from({ length: 7 }, (_, i) => {
+    const date = subDays(today, 6 - i);
+    const day = format(date, 'EEE');
+    const dailyExpenses = transactions
+      .filter(t => t.type === 'expense' && new Date(t.date).toDateString() === date.toDateString())
+      .reduce((acc, t) => acc + Math.abs(t.amount), 0);
+    const dailySavings = savingsGoals.reduce((acc, goal) => acc + (goal.currentAmount / 30), 0) / 7; // simplified
+    return { name: day, expense: dailyExpenses, savings: dailySavings, balance: totalBalance - (dailyExpenses * (7-i)) }; // simplified balance
+  });
+
+  const weeklyData = Array.from({ length: 4 }, (_, i) => {
+    const week = `Week ${i + 1}`;
+    const weeklyExpenses = transactions
+        .filter(t => new Date(t.date) > subDays(today, (4-i)*7) && new Date(t.date) <= subDays(today, (3-i)*7))
+        .reduce((acc, t) => acc + Math.abs(t.amount), 0);
+    const weeklySavings = savingsGoals.reduce((acc, goal) => acc + (goal.currentAmount / 4), 0); // simplified
+    return { name: week, expense: weeklyExpenses, savings: weeklySavings, balance: totalBalance - (weeklyExpenses * (4-i)) };
+  });
+
+  const monthlyData = [
+    { name: 'Apr', expense: 2400, savings: 500, balance: 10000 },
+    { name: 'May', expense: 1398, savings: 550, balance: 12000 },
+    { name: 'Jun', expense: 3800, savings: 600, balance: 9000 },
+    { name: 'Jul', expense: 2908, savings: 650, balance: 15000 },
   ];
+  
+  const renderChart = (data: any[], key: string, color: string, title: string) => (
+     <Card>
+        <CardHeader>
+            <CardTitle className="font-headline text-lg">{title}</CardTitle>
+        </CardHeader>
+        <CardContent>
+            <ResponsiveContainer width="100%" height={200}>
+                <LineChart data={data}>
+                    <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
+                    <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `₹${value.toLocaleString()}`} />
+                    <Tooltip 
+                        content={<ChartTooltipContent />}
+                        cursor={{fill: 'hsl(var(--muted))'}}
+                    />
+                    <Line type="monotone" dataKey={key} stroke={color} fill={color} strokeWidth={2} dot={{r: 4}} />
+                </LineChart>
+            </ResponsiveContainer>
+        </CardContent>
+     </Card>
+  );
+
 
   return (
     <>
@@ -79,68 +125,38 @@ export default function DashboardPage() {
         </Card>
       </div>
       
-      <div className="grid gap-4 md:gap-8 lg:grid-cols-2 xl:grid-cols-3">
-        <div className="xl:col-span-2">
-          <Card>
-            <CardHeader>
-              <CardTitle className="font-headline">Monthly Overview</CardTitle>
-              <CardDescription>
-                A summary of your income and expenses.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={monthlyChartData}>
-                  <XAxis
-                    dataKey="month"
-                    stroke="#888888"
-                    fontSize={12}
-                    tickLine={false}
-                    axisLine={false}
-                  />
-                  <YAxis
-                    stroke="#888888"
-                    fontSize={12}
-                    tickLine={false}
-                    axisLine={false}
-                    tickFormatter={(value) => `₹${value}`}
-                  />
-                  <Tooltip 
-                    cursor={{fill: 'hsl(var(--muted))'}}
-                    content={({ active, payload }) => {
-                        if (active && payload && payload.length) {
-                            return (
-                            <div className="rounded-lg border bg-background p-2 shadow-sm">
-                                <div className="grid grid-cols-2 gap-2">
-                                <div className="flex flex-col">
-                                    <span className="text-[0.70rem] uppercase text-muted-foreground">
-                                    Income
-                                    </span>
-                                    <span className="font-bold text-green-600">{payload[0].value?.toLocaleString()}</span>
-                                </div>
-                                <div className="flex flex-col">
-                                    <span className="text-[0.70rem] uppercase text-muted-foreground">
-                                    Expense
-                                    </span>
-                                    <span className="font-bold text-red-600">{payload[1].value?.toLocaleString()}</span>
-                                </div>
-                                </div>
-                            </div>
-                            )
-                        }
-                        return null
-                        }}
-                  />
-                  <Bar dataKey="income" fill="hsl(var(--primary))" name="Income" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="expense" fill="hsl(var(--destructive))" name="Expense" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        </div>
+       <Tabs defaultValue="monthly" className="w-full">
+            <TabsList className="grid w-full grid-cols-3 md:w-[400px]">
+                <TabsTrigger value="daily">Daily</TabsTrigger>
+                <TabsTrigger value="weekly">Weekly</TabsTrigger>
+                <TabsTrigger value="monthly">Monthly</TabsTrigger>
+            </TabsList>
+            <TabsContent value="daily">
+                <div className="grid gap-4 mt-4 md:grid-cols-1 lg:grid-cols-3">
+                    {renderChart(dailyData, 'balance', 'hsl(var(--primary))', 'Balance Overview (Last 7 Days)')}
+                    {renderChart(dailyData, 'expense', 'hsl(var(--destructive))', 'Expense Overview (Last 7 Days)')}
+                    {renderChart(dailyData, 'savings', 'hsl(var(--accent))', 'Savings Overview (Last 7 Days)')}
+                </div>
+            </TabsContent>
+            <TabsContent value="weekly">
+                 <div className="grid gap-4 mt-4 md:grid-cols-1 lg:grid-cols-3">
+                    {renderChart(weeklyData, 'balance', 'hsl(var(--primary))', 'Balance Overview (Last 4 Weeks)')}
+                    {renderChart(weeklyData, 'expense', 'hsl(var(--destructive))', 'Expense Overview (Last 4 Weeks)')}
+                    {renderChart(weeklyData, 'savings', 'hsl(var(--accent))', 'Savings Overview (Last 4 Weeks)')}
+                </div>
+            </TabsContent>
+            <TabsContent value="monthly">
+                 <div className="grid gap-4 mt-4 md:grid-cols-1 lg:grid-cols-3">
+                    {renderChart(monthlyData, 'balance', 'hsl(var(--primary))', 'Balance Overview (Last 4 Months)')}
+                    {renderChart(monthlyData, 'expense', 'hsl(var(--destructive))', 'Expense Overview (Last 4 Months)')}
+                    {renderChart(monthlyData, 'savings', 'hsl(var(--accent))', 'Savings Overview (Last 4 Months)')}
+                </div>
+            </TabsContent>
+        </Tabs>
 
-        <div className="xl:col-span-1">
-          <Card>
+      <div className="grid gap-4 md:gap-8 lg:grid-cols-2 xl:grid-cols-3 mt-8">
+        <div className="xl:col-span-2">
+           <Card>
             <CardHeader>
               <CardTitle className="font-headline">Recent Transactions</CardTitle>
                <CardDescription>
@@ -172,7 +188,38 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
         </div>
+
+        <div className="xl:col-span-1">
+          <Card>
+            <CardHeader>
+              <CardTitle className="font-headline">Active Savings Goals</CardTitle>
+              <CardDescription>
+                Your progress towards your financial goals.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {savingsGoals.map(goal => (
+                <div key={goal.id} className="mb-4 last:mb-0">
+                    <div className="flex justify-between items-center mb-1">
+                        <span className="text-sm font-medium">{goal.name}</span>
+                        <span className="text-xs text-muted-foreground">
+                            ₹{goal.currentAmount.toLocaleString()} / ₹{goal.targetAmount.toLocaleString()}
+                        </span>
+                    </div>
+                    <div className="w-full bg-muted rounded-full h-2.5">
+                        <div 
+                            className="bg-primary h-2.5 rounded-full" 
+                            style={{ width: `${(goal.currentAmount / goal.targetAmount) * 100}%` }}
+                        ></div>
+                    </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </>
   );
 }
+
+    

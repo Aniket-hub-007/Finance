@@ -13,7 +13,13 @@ export async function GET() {
   try {
     const db = await getDb();
     const transactions = await db.collection('transactions').find({}).sort({ date: -1 }).toArray();
-    return NextResponse.json({ success: true, data: transactions });
+    // Manually map over the transactions to convert ObjectId to string
+    const sanitizedTransactions = transactions.map(tx => ({
+        ...tx,
+        id: tx._id.toString(),
+        _id: tx._id.toString(),
+    }));
+    return NextResponse.json({ success: true, data: sanitizedTransactions });
   } catch (error) {
     console.error(error);
     return NextResponse.json({ success: false, error: 'Failed to fetch transactions' }, { status: 500 });
@@ -25,7 +31,7 @@ export async function POST(request: Request) {
     const transaction: Omit<Transaction, 'id' | '_id'> = await request.json();
     const db = await getDb();
     const result = await db.collection('transactions').insertOne(transaction);
-    const newTransaction = { ...transaction, _id: result.insertedId, id: result.insertedId.toString() };
+    const newTransaction = { ...transaction, _id: result.insertedId.toString(), id: result.insertedId.toString() };
     return NextResponse.json({ success: true, data: newTransaction }, { status: 201 });
   } catch (error) {
     console.error(error);
@@ -36,7 +42,10 @@ export async function POST(request: Request) {
 export async function PUT(request: Request) {
     try {
         const transaction: Transaction = await request.json();
-        const { id, ...dataToUpdate } = transaction;
+        const { id, _id, ...dataToUpdate } = transaction; // Exclude _id from dataToUpdate
+        if (!id) {
+             return NextResponse.json({ success: false, error: 'Transaction ID is required' }, { status: 400 });
+        }
         const db = await getDb();
         const result = await db.collection('transactions').updateOne(
             { _id: new ObjectId(id as string) },
@@ -45,7 +54,8 @@ export async function PUT(request: Request) {
         if (result.matchedCount === 0) {
             return NextResponse.json({ success: false, error: 'Transaction not found' }, { status: 404 });
         }
-        return NextResponse.json({ success: true, data: transaction });
+        const updatedTransaction = { ...dataToUpdate, id: id, _id: id };
+        return NextResponse.json({ success: true, data: updatedTransaction });
     } catch (error) {
         console.error(error);
         return NextResponse.json({ success: false, error: 'Failed to update transaction' }, { status: 500 });

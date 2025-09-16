@@ -25,6 +25,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { BalanceEditForm } from '@/components/dashboard/balance-edit-form';
 import { useAppContext } from '@/context/app-provider';
+import type { Balances } from '@/lib/types';
 
 const chartConfig = {
   balance: {
@@ -42,7 +43,7 @@ const chartConfig = {
 } satisfies ChartConfig;
 
 export default function DashboardPage() {
-  const { balances, setBalances, transactions, savingsGoals, debts, lending } = useAppContext();
+  const { balances, updateBalances, transactions, savingsGoals, debts, lending } = useAppContext();
   const [isEditFormOpen, setIsEditFormOpen] = useState(false);
 
   const totalBalance = balances.bank + balances.upi + balances.cash;
@@ -52,8 +53,8 @@ export default function DashboardPage() {
   const totalLent = lending.filter(l => l.status === 'Pending').reduce((acc, l) => acc + l.amount, 0);
 
 
-  const handleBalanceUpdate = (newBalances: { bank: number; upi: number; cash: number }) => {
-    setBalances(newBalances);
+  const handleBalanceUpdate = async (newBalances: Balances) => {
+    await updateBalances(newBalances);
     setIsEditFormOpen(false);
   };
 

@@ -61,8 +61,9 @@ export type Budget = {
 };
 
 export type Balances = {
+  _id?: string | ObjectId;
+  id?: string;
   bank: number;
   upi: number;
   cash: number;
 };
-

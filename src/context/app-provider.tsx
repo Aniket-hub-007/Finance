@@ -10,7 +10,7 @@ interface AppContextType {
   updateTransaction: (transaction: Transaction) => Promise<void>;
   deleteTransaction: (transaction: Transaction) => Promise<void>;
   balances: Balances;
-  setBalances: (balances: Balances) => void;
+  updateBalances: (balances: Balances) => Promise<void>;
   
   savingsGoals: SavingsGoal[];
   addGoal: (goal: Omit<SavingsGoal, 'id' | '_id'>) => Promise<void>;
@@ -37,15 +37,15 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-const baseBalances: Balances = {
-  bank: 12050.75,
-  upi: 2500.50,
-  cash: 850.00,
+const initialBalances: Balances = {
+  bank: 0,
+  upi: 0,
+  cash: 0,
 };
 
 export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [balances, setBalances] = useState<Balances>(baseBalances);
+  const [balances, setBalances] = useState<Balances>(initialBalances);
   const [savingsGoals, setSavingsGoals] = useState<SavingsGoal[]>([]);
   const [debts, setDebts] = useState<Debt[]>([]);
   const [lending, setLending] = useState<Lending[]>([]);
@@ -55,32 +55,32 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      const [transactionsRes, goalsRes, debtsRes, lendingRes, budgetsRes] = await Promise.all([
+      const [transactionsRes, goalsRes, debtsRes, lendingRes, budgetsRes, balancesRes] = await Promise.all([
         fetch('/api/transactions'),
         fetch('/api/goals'),
         fetch('/api/debts'),
         fetch('/api/lending'),
         fetch('/api/budgets'),
+        fetch('/api/balances'),
       ]);
 
       const transactionsData = await transactionsRes.json();
-      if (transactionsData.success) {
-        const fetchedTransactions = transactionsData.data.map((tx: any) => ({ ...tx, id: tx._id }));
-        setTransactions(fetchedTransactions);
-        recalculateBalances(fetchedTransactions);
-      }
-
+      if (transactionsData.success) setTransactions(transactionsData.data);
+      
       const goalsData = await goalsRes.json();
-      if (goalsData.success) setSavingsGoals(goalsData.data.map((g: any) => ({...g, id: g._id })));
+      if (goalsData.success) setSavingsGoals(goalsData.data);
 
       const debtsData = await debtsRes.json();
-      if (debtsData.success) setDebts(debtsData.data.map((d: any) => ({...d, id: d._id })));
+      if (debtsData.success) setDebts(debtsData.data);
       
       const lendingData = await lendingRes.json();
-      if (lendingData.success) setLending(lendingData.data.map((l: any) => ({...l, id: l._id })));
+      if (lendingData.success) setLending(lendingData.data);
 
       const budgetsData = await budgetsRes.json();
-      if (budgetsData.success) setBudgets(budgetsData.data.map((b: any) => ({...b, id: b._id })));
+      if (budgetsData.success) setBudgets(budgetsData.data);
+
+      const balancesData = await balancesRes.json();
+      if (balancesData.success) setBalances(balancesData.data);
 
     } catch (error) {
       console.error("Error fetching initial data:", error);
@@ -93,33 +93,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     fetchData();
   }, []);
 
-  const recalculateBalances = (allTransactions: Transaction[]) => {
-    const adjustments = allTransactions.reduce((acc, t) => {
-        const amount = t.type === 'income' ? t.amount : -Math.abs(t.amount);
-        switch (t.paymentMethod) {
-            case 'card':
-            case 'other':
-                acc.bank += amount;
-                break;
-            case 'upi':
-                acc.upi += amount;
-                break;
-            case 'cash':
-                acc.cash += amount;
-                break;
-        }
-        return acc;
-    }, { bank: 0, upi: 0, cash: 0 });
-
-    setBalances({
-        bank: baseBalances.bank + adjustments.bank,
-        upi: baseBalances.upi + adjustments.upi,
-        cash: baseBalances.cash + adjustments.cash,
-    });
-  };
-
-  // Generic API handlers
-  const handleApiCall = async <T, U>(endpoint: string, method: 'POST' | 'PUT' | 'DELETE', body: T, idField?: string): Promise<U | null> => {
+  const handleApiCall = async <T, U>(endpoint: string, method: 'POST' | 'PUT' | 'DELETE', body: T): Promise<U | null> => {
     try {
       const response = await fetch(endpoint, {
         method,
@@ -128,7 +102,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       });
       const result = await response.json();
       if (result.success) {
-        return idField ? { ...result.data, id: result.data[idField] } : result.data;
+        return result.data;
       } else {
         console.error(`Failed to ${method} ${endpoint}:`, result.error);
         return null;
@@ -139,45 +113,74 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     }
   }
 
+  const updateBalances = async (newBalances: Balances) => {
+    const updatedBalances = await handleApiCall<Balances, Balances>('/api/balances', 'PUT', newBalances);
+    if(updatedBalances) {
+        setBalances(updatedBalances);
+    }
+  }
+
+  const adjustBalance = async (transaction: Omit<Transaction, 'id' | '_id'>, factor: 1 | -1) => {
+      const amount = transaction.amount * factor;
+      const newBalances = { ...balances };
+
+      switch (transaction.paymentMethod) {
+          case 'card':
+          case 'other':
+              newBalances.bank += amount;
+              break;
+          case 'upi':
+              newBalances.upi += amount;
+              break;
+          case 'cash':
+              newBalances.cash += amount;
+              break;
+      }
+      await updateBalances(newBalances);
+  }
+
+
   // Transactions
   const addTransaction = async (transaction: Omit<Transaction, 'id' | '_id'>) => {
-    const newTransaction = await handleApiCall<Omit<Transaction, 'id' | '_id'>, Transaction>('/api/transactions', 'POST', transaction, '_id');
+    const newTransaction = await handleApiCall<Omit<Transaction, 'id' | '_id'>, Transaction>('/api/transactions', 'POST', transaction);
     if (newTransaction) {
-      setTransactions(prev => {
-        const newTransactions = [newTransaction, ...prev];
-        recalculateBalances(newTransactions);
-        return newTransactions;
-      });
+      setTransactions(prev => [newTransaction, ...prev]);
+      const factor = transaction.type === 'income' ? 1 : -1;
+      await adjustBalance(transaction, factor);
     }
   };
   const updateTransaction = async (updatedTransaction: Transaction) => {
-    const result = await handleApiCall<Transaction, Transaction>('/api/transactions', 'PUT', updatedTransaction, '_id');
+    const originalTransaction = transactions.find(t => t.id === updatedTransaction.id);
+    if(!originalTransaction) return;
+
+    const result = await handleApiCall<Transaction, Transaction>('/api/transactions', 'PUT', updatedTransaction);
     if (result) {
-      setTransactions(prev => {
-        const newTransactions = prev.map(t => (t.id === result.id ? result : t));
-        recalculateBalances(newTransactions);
-        return newTransactions;
-      });
+      // Revert old transaction amount
+      const oldFactor = originalTransaction.type === 'income' ? -1 : 1;
+      await adjustBalance(originalTransaction, oldFactor);
+      // Apply new transaction amount
+      const newFactor = updatedTransaction.type === 'income' ? 1 : -1;
+      await adjustBalance(updatedTransaction, newFactor);
+
+      setTransactions(prev => prev.map(t => (t.id === result.id ? result : t)));
     }
   };
   const deleteTransaction = async (transactionToDelete: Transaction) => {
-    const result = await handleApiCall<{ id: string }, any>('/api/transactions', 'DELETE', { id: transactionToDelete.id });
+    const result = await handleApiCall<{ id: string | number }, any>('/api/transactions', 'DELETE', { id: transactionToDelete.id });
     if (result) {
-      setTransactions(prev => {
-        const newTransactions = prev.filter(t => t.id !== transactionToDelete.id);
-        recalculateBalances(newTransactions);
-        return newTransactions;
-      });
+      setTransactions(prev => prev.filter(t => t.id !== transactionToDelete.id));
+      const factor = transactionToDelete.type === 'income' ? -1 : 1;
+      await adjustBalance(transactionToDelete, factor);
     }
   };
 
   // Goals
   const addGoal = async (goal: Omit<SavingsGoal, 'id' | '_id'>) => {
-    const newGoal = await handleApiCall<Omit<SavingsGoal, 'id' | '_id'>, SavingsGoal>('/api/goals', 'POST', goal, '_id');
+    const newGoal = await handleApiCall<Omit<SavingsGoal, 'id' | '_id'>, SavingsGoal>('/api/goals', 'POST', goal);
     if (newGoal) setSavingsGoals(prev => [newGoal, ...prev]);
   };
   const updateGoal = async (updatedGoal: SavingsGoal) => {
-    const result = await handleApiCall<SavingsGoal, SavingsGoal>('/api/goals', 'PUT', updatedGoal, '_id');
+    const result = await handleApiCall<SavingsGoal, SavingsGoal>('/api/goals', 'PUT', updatedGoal);
     if (result) setSavingsGoals(prev => prev.map(g => (g.id === result.id ? result : g)));
   };
   const deleteGoal = async (goalToDelete: SavingsGoal) => {
@@ -187,11 +190,11 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   
   // Debts
   const addDebt = async (debt: Omit<Debt, 'id' | '_id'>) => {
-    const newDebt = await handleApiCall<Omit<Debt, 'id' | '_id'>, Debt>('/api/debts', 'POST', debt, '_id');
+    const newDebt = await handleApiCall<Omit<Debt, 'id' | '_id'>, Debt>('/api/debts', 'POST', debt);
     if (newDebt) setDebts(prev => [newDebt, ...prev]);
   };
   const updateDebt = async (updatedDebt: Debt) => {
-    const result = await handleApiCall<Debt, Debt>('/api/debts', 'PUT', updatedDebt, '_id');
+    const result = await handleApiCall<Debt, Debt>('/api/debts', 'PUT', updatedDebt);
     if (result) setDebts(prev => prev.map(d => (d.id === result.id ? result : d)));
   };
   const deleteDebt = async (debtToDelete: Debt) => {
@@ -201,11 +204,11 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
   // Lending
   const addLending = async (lendingItem: Omit<Lending, 'id' | '_id'>) => {
-    const newLending = await handleApiCall<Omit<Lending, 'id' | '_id'>, Lending>('/api/lending', 'POST', lendingItem, '_id');
+    const newLending = await handleApiCall<Omit<Lending, 'id' | '_id'>, Lending>('/api/lending', 'POST', lendingItem);
     if (newLending) setLending(prev => [newLending, ...prev]);
   };
   const updateLending = async (updatedLending: Lending) => {
-    const result = await handleApiCall<Lending, Lending>('/api/lending', 'PUT', updatedLending, '_id');
+    const result = await handleApiCall<Lending, Lending>('/api/lending', 'PUT', updatedLending);
     if (result) setLending(prev => prev.map(l => (l.id === result.id ? result : l)));
   };
   const deleteLending = async (lendingToDelete: Lending) => {
@@ -215,11 +218,11 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
   // Budgets
   const addBudget = async (budget: Omit<Budget, 'id' | '_id'>) => {
-    const newBudget = await handleApiCall<Omit<Budget, 'id' | '_id'>, Budget>('/api/budgets', 'POST', budget, '_id');
+    const newBudget = await handleApiCall<Omit<Budget, 'id' | '_id'>, Budget>('/api/budgets', 'POST', budget);
     if (newBudget) setBudgets(prev => [newBudget, ...prev]);
   };
   const updateBudget = async (updatedBudget: Budget) => {
-    const result = await handleApiCall<Budget, Budget>('/api/budgets', 'PUT', updatedBudget, '_id');
+    const result = await handleApiCall<Budget, Budget>('/api/budgets', 'PUT', updatedBudget);
     if (result) setBudgets(prev => prev.map(b => (b.id === result.id ? result : b)));
   };
   const deleteBudget = async (budgetToDelete: Budget) => {
@@ -234,7 +237,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     updateTransaction,
     deleteTransaction,
     balances,
-    setBalances,
+    updateBalances,
     savingsGoals,
     addGoal,
     updateGoal,

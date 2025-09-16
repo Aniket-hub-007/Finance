@@ -18,8 +18,8 @@ import {
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Wallet, Smartphone, Landmark, Plus, PiggyBank, CreditCard, TrendingUp, TrendingDown } from 'lucide-react';
-import { Line, LineChart, CartesianGrid, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
-import { ChartTooltipContent, ChartContainer, ChartConfig } from '@/components/ui/chart';
+import { Line, LineChart, CartesianGrid, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, Pie, PieChart, Cell } from 'recharts';
+import { ChartTooltip, ChartTooltipContent, ChartContainer, ChartConfig, ChartLegend, ChartLegendContent } from '@/components/ui/chart';
 import { subDays, format, startOfMonth, eachMonthOfInterval, subMonths, parseISO, isAfter } from 'date-fns';
 import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
@@ -50,7 +50,7 @@ export default function DashboardPage() {
 
   const adjustedBalances = useMemo(() => {
     if (!latestBalance.date) {
-        return latestBalance;
+        return { bank: 0, upi: 0, cash: 0, date: new Date().toISOString() };
     }
     const lastBalanceDate = parseISO(latestBalance.date);
     const recentTransactions = transactions.filter(t => t.date && isAfter(parseISO(t.date), lastBalanceDate) && t.type === 'expense');
@@ -83,6 +83,34 @@ export default function DashboardPage() {
   const totalSavings = savingsGoals.reduce((acc, goal) => acc + goal.currentAmount, 0);
   const totalDebts = debts.reduce((acc, debt) => acc + debt.currentBalance, 0);
   const totalLent = lending.filter(l => l.status === 'Pending').reduce((acc, l) => acc + l.amount, 0);
+
+  const expensesByCategory = useMemo(() => {
+    const categoryMap: { [key: string]: number } = {};
+    transactions
+      .filter(t => t.type === 'expense')
+      .forEach(t => {
+        if (!categoryMap[t.category]) {
+          categoryMap[t.category] = 0;
+        }
+        categoryMap[t.category] += t.amount;
+      });
+
+    return Object.entries(categoryMap).map(([category, amount]) => ({
+      category,
+      amount,
+    }));
+  }, [transactions]);
+
+  const categoryChartConfig = useMemo(() => {
+    const config: ChartConfig = {};
+    expensesByCategory.forEach((item, index) => {
+      config[item.category] = {
+        label: item.category,
+        color: `hsl(var(--chart-${(index % 5) + 1}))`,
+      };
+    });
+    return config;
+  }, [expensesByCategory]);
 
 
   const handleBalanceUpdate = async (newBalance: Omit<Balance, 'id' | '_id'>) => {
@@ -323,7 +351,29 @@ export default function DashboardPage() {
           </Card>
         </div>
 
-        <div className="xl:col-span-1">
+        <Card>
+            <CardHeader>
+                <CardTitle className="font-headline">Expenses by Category</CardTitle>
+                <CardDescription>A breakdown of your spending by category.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <ChartContainer config={categoryChartConfig} className="min-h-[200px] w-full">
+                    <ResponsiveContainer width="100%" height={250}>
+                        <PieChart>
+                        <ChartTooltip content={<ChartTooltipContent nameKey="amount" hideLabel />} />
+                        <Pie data={expensesByCategory} dataKey="amount" nameKey="category" innerRadius={60}>
+                            {expensesByCategory.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={categoryChartConfig[entry.category]?.color} />
+                            ))}
+                        </Pie>
+                        <ChartLegend content={<ChartLegendContent />} />
+                        </PieChart>
+                    </ResponsiveContainer>
+                </ChartContainer>
+            </CardContent>
+        </Card>
+
+        <div className="xl:col-span-3">
           <Card>
             <CardHeader>
               <CardTitle className="font-headline">Active Savings Goals</CardTitle>
@@ -360,4 +410,5 @@ export default function DashboardPage() {
       />
     </>
   );
-}
+
+    

@@ -17,7 +17,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Wallet, Smartphone, Landmark, Plus, PiggyBank, CreditCard, TrendingUp, TrendingDown } from 'lucide-react';
+import { Wallet, Smartphone, Landmark, Plus, PiggyBank, CreditCard, TrendingUp, TrendingDown, Calendar, BarChart } from 'lucide-react';
 import { Line, LineChart, CartesianGrid, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, Pie, PieChart, Cell } from 'recharts';
 import { ChartTooltipContent, ChartContainer, ChartConfig, ChartLegend, ChartLegendContent } from '@/components/ui/chart';
 import { subDays, format, startOfMonth, eachMonthOfInterval, subMonths, parseISO, isAfter, startOfWeek, eachWeekOfInterval, endOfMonth } from 'date-fns';
@@ -28,6 +28,7 @@ import { useAppContext } from '@/context/app-provider';
 import type { Balance, Transaction } from '@/lib/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 
 const chartConfig = {
   balance: {
@@ -47,8 +48,8 @@ const chartConfig = {
 export default function DashboardPage() {
   const { balances, addBalance, transactions, savingsGoals, debts, lending } = useAppContext();
   const [isEditFormOpen, setIsEditFormOpen] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState('all');
-  const [selectedPaymentMode, setSelectedPaymentMode] = useState('all');
+  const [searchCategory, setSearchCategory] = useState('');
+  const [searchPaymentMode, setSearchPaymentMode] = useState('');
   
   const latestBalance = useMemo(() => balances.length > 0 ? balances[0] : { bank: 0, upi: 0, cash: 0, date: new Date().toISOString() }, [balances]);
 
@@ -85,26 +86,40 @@ export default function DashboardPage() {
 
   const filteredTransactions = useMemo(() => {
     return transactions.filter(t => {
-      const categoryMatch = selectedCategory === 'all' || t.category.toLowerCase() === selectedCategory.toLowerCase();
-      const paymentModeMatch = selectedPaymentMode === 'all' || t.paymentMethod.toLowerCase() === selectedPaymentMode.toLowerCase();
+      const categoryMatch = searchCategory === '' || t.category.toLowerCase().includes(searchCategory.toLowerCase());
+      const paymentModeMatch = searchPaymentMode === '' || t.paymentMethod.toLowerCase().includes(searchPaymentMode.toLowerCase());
       return t.type === 'expense' && categoryMatch && paymentModeMatch;
     });
-  }, [transactions, selectedCategory, selectedPaymentMode]);
+  }, [transactions, searchCategory, searchPaymentMode]);
 
-  const totalExpenses = filteredTransactions.reduce((acc, t) => acc + Math.abs(t.amount), 0);
+  const { lifetimeExpenses, expensesLast28Days, expensesLast7Days } = useMemo(() => {
+    const today = new Date();
+    const sevenDaysAgo = subDays(today, 7);
+    const twentyEightDaysAgo = subDays(today, 28);
+
+    const lifetime = transactions
+        .filter(t => t.type === 'expense')
+        .reduce((acc, t) => acc + Math.abs(t.amount), 0);
+    
+    const last7 = transactions
+        .filter(t => t.type === 'expense' && t.date && isAfter(parseISO(t.date), sevenDaysAgo))
+        .reduce((acc, t) => acc + Math.abs(t.amount), 0);
+
+    const last28 = transactions
+        .filter(t => t.type === 'expense' && t.date && isAfter(parseISO(t.date), twentyEightDaysAgo))
+        .reduce((acc, t) => acc + Math.abs(t.amount), 0);
+
+    return { 
+        lifetimeExpenses: lifetime,
+        expensesLast7Days: last7,
+        expensesLast28Days: last28,
+    };
+}, [transactions]);
+
+
   const totalSavings = savingsGoals.reduce((acc, goal) => acc + goal.currentAmount, 0);
   const totalDebts = debts.reduce((acc, debt) => acc + debt.currentBalance, 0);
   const totalLent = lending.filter(l => l.status === 'Pending').reduce((acc, l) => acc + l.amount, 0);
-
-  const expenseCategories = useMemo(() => {
-    const categories = new Set(transactions.filter(t => t.type === 'expense').map(t => t.category));
-    return ['all', ...Array.from(categories)];
-  }, [transactions]);
-  
-  const paymentMethods = useMemo(() => {
-    const methods = new Set(transactions.map(t => t.paymentMethod));
-    return ['all', ...Array.from(methods)];
-  }, [transactions]);
 
   const expensesByCategory = useMemo(() => {
     const categoryMap: { [key: string]: number } = {};
@@ -329,12 +344,32 @@ export default function DashboardPage() {
        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mt-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Expenses</CardTitle>
-            <TrendingDown className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Lifetime Expenses</CardTitle>
+            <BarChart className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-destructive">₹{totalExpenses.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground">This month</p>
+            <div className="text-2xl font-bold text-destructive">₹{lifetimeExpenses.toLocaleString()}</div>
+            <p className="text-xs text-muted-foreground">Total expenses recorded</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Expenses (Last 28 Days)</CardTitle>
+            <Calendar className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-destructive">₹{expensesLast28Days.toLocaleString()}</div>
+            <p className="text-xs text-muted-foreground">Spending in the last month</p>
+          </CardContent>
+        </Card>
+         <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Expenses (Last 7 Days)</CardTitle>
+            <Calendar className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-destructive">₹{expensesLast7Days.toLocaleString()}</div>
+            <p className="text-xs text-muted-foreground">Spending in the last week</p>
           </CardContent>
         </Card>
         <Card>
@@ -368,43 +403,6 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
-
-      <Card className="mt-8">
-        <CardHeader>
-          <CardTitle>Filters</CardTitle>
-          <CardDescription>Filter expenses by category and payment method.</CardDescription>
-        </CardHeader>
-        <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="grid gap-2">
-                <Label htmlFor="category-filter">Category</Label>
-                 <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                  <SelectTrigger id="category-filter">
-                    <SelectValue placeholder="Select category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {expenseCategories.map(category => (
-                      <SelectItem key={category} value={category}>{category}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="payment-mode-filter">Payment Mode</Label>
-                <Select value={selectedPaymentMode} onValueChange={setSelectedPaymentMode}>
-                  <SelectTrigger id="payment-mode-filter">
-                    <SelectValue placeholder="Select payment method" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {paymentMethods.map(method => (
-                        <SelectItem key={method} value={method}>{method}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-        </CardContent>
-      </Card>
       
        <Tabs defaultValue="daily" className="w-full mt-8">
             <TabsList className="grid w-full grid-cols-3 md:w-[400px]">
@@ -448,6 +446,26 @@ export default function DashboardPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="category-filter">Category</Label>
+                    <Input 
+                      id="category-filter"
+                      placeholder="Search by category..."
+                      value={searchCategory}
+                      onChange={(e) => setSearchCategory(e.target.value)}
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="payment-mode-filter">Payment Mode</Label>
+                    <Input 
+                      id="payment-mode-filter"
+                      placeholder="Search by payment mode..."
+                      value={searchPaymentMode}
+                      onChange={(e) => setSearchPaymentMode(e.target.value)}
+                    />
+                  </div>
+                </div>
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -457,7 +475,7 @@ export default function DashboardPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {transactions.slice(0, 5).map((tx) => (
+                  {filteredTransactions.slice(0, 5).map((tx) => (
                     <TableRow key={tx.id}>
                       <TableCell>
                         <div className="font-medium">{tx.description}</div>
@@ -484,7 +502,7 @@ export default function DashboardPage() {
                 <ChartContainer config={categoryChartConfig} className="min-h-[200px] w-full">
                     <ResponsiveContainer width="100%" height={250}>
                         <PieChart>
-                        <ChartTooltipContent nameKey="amount" hideLabel />
+                        <RechartsTooltip content={<ChartTooltipContent nameKey="amount" />} />
                         <Pie data={expensesByCategory} dataKey="amount" nameKey="category" innerRadius={60}>
                             {expensesByCategory.map((entry, index) => (
                                 <Cell key={`cell-${index}`} fill={categoryChartConfig[entry.category as keyof typeof categoryChartConfig]?.color} />

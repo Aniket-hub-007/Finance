@@ -70,35 +70,6 @@ export default function TransactionsPage() {
 
   return (
     <>
-    <Card className="mb-8">
-        <CardHeader>
-          <CardTitle>Filters</CardTitle>
-          <CardDescription>Filter transactions by category and payment method.</CardDescription>
-        </CardHeader>
-        <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="grid gap-2">
-                <Label htmlFor="category-filter">Category</Label>
-                <Input 
-                  id="category-filter"
-                  placeholder="Search by category..."
-                  value={searchCategory}
-                  onChange={(e) => setSearchCategory(e.target.value)}
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="payment-mode-filter">Payment Mode</Label>
-                <Input 
-                  id="payment-mode-filter"
-                  placeholder="Search by payment mode..."
-                  value={searchPaymentMode}
-                  onChange={(e) => setSearchPaymentMode(e.target.value)}
-                />
-              </div>
-            </div>
-        </CardContent>
-      </Card>
-
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <div>

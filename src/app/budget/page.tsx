@@ -4,8 +4,8 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { PlusCircle, FileText, Loader2 } from "lucide-react";
-import { useState } from "react";
+import { PlusCircle, FileText, Loader2, TrendingDown, Wallet, AlertCircle } from "lucide-react";
+import { useState, useMemo } from "react";
 import type { Budget } from "@/lib/types";
 import { BudgetForm } from "@/components/budget/budget-form";
 import {
@@ -18,11 +18,34 @@ import {
 } from '@/components/ui/table';
 import { cn } from "@/lib/utils";
 import { useAppContext } from "@/context/app-provider";
+import { startOfMonth, endOfMonth, format } from 'date-fns';
 
 export default function BudgetPage() {
     const { budgets, addBudget, updateBudget, deleteBudget, isLoading } = useAppContext();
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [selectedBudget, setSelectedBudget] = useState<Budget | undefined>(undefined);
+
+    const { monthlySpent, remainingBudget, overspentBudgetsCount } = useMemo(() => {
+        let monthlySpent = 0;
+        let totalBudget = 0;
+        let overspentBudgetsCount = 0;
+
+        budgets.forEach(budget => {
+            const totalExpenses = budget.expenses.reduce((acc, expense) => acc + expense.amount, 0);
+            monthlySpent += totalExpenses;
+            totalBudget += budget.amount;
+            if (totalExpenses > budget.amount) {
+                overspentBudgetsCount++;
+            }
+        });
+
+        const remainingBudget = totalBudget - monthlySpent;
+
+        return { monthlySpent, remainingBudget, overspentBudgetsCount };
+    }, [budgets]);
+
+    const monthStartDate = format(startOfMonth(new Date()), 'MMMM d, yyyy');
+    const monthEndDate = format(endOfMonth(new Date()), 'MMMM d, yyyy');
 
      const handleAdd = () => {
         setSelectedBudget(undefined);
@@ -67,6 +90,42 @@ export default function BudgetPage() {
                     New Budget
                 </Button>
             </div>
+            <Card className="mb-8">
+                <CardHeader>
+                    <CardTitle>Monthly Budget Summary</CardTitle>
+                    <CardDescription>{monthStartDate} - {monthEndDate}</CardDescription>
+                </CardHeader>
+                <CardContent className="grid gap-4 sm:grid-cols-3">
+                    <div className="flex items-center gap-4 rounded-lg border p-4">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                            <TrendingDown className="h-6 w-6" />
+                        </div>
+                        <div>
+                            <p className="text-sm text-muted-foreground">Monthly Spent</p>
+                            <p className="text-2xl font-bold">₹{monthlySpent.toLocaleString()}</p>
+                        </div>
+                    </div>
+                     <div className="flex items-center gap-4 rounded-lg border p-4">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-accent/10 text-accent">
+                            <Wallet className="h-6 w-6" />
+                        </div>
+                        <div>
+                            <p className="text-sm text-muted-foreground">Remaining</p>
+                            <p className="text-2xl font-bold">₹{remainingBudget.toLocaleString()}</p>
+                        </div>
+                    </div>
+                     <div className="flex items-center gap-4 rounded-lg border p-4">
+                         <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-destructive/10 text-destructive">
+                            <AlertCircle className="h-6 w-6" />
+                        </div>
+                        <div>
+                            <p className="text-sm text-muted-foreground">Over Budgets</p>
+                            <p className="text-2xl font-bold">{overspentBudgetsCount}</p>
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+
             <div className="grid gap-6">
                 {budgets.map(budget => {
                     const totalExpenses = budget.expenses.reduce((acc, expense) => acc + expense.amount, 0);

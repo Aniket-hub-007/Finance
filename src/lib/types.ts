@@ -45,17 +45,11 @@ export type NavItem = {
     label: string;
 }
 
-export type BudgetExpense = {
-  category: string;
-  amount: number;
-};
-
 export type Budget = {
   id: string;
   _id: string;
   name: string;
   amount: number;
-  expenses: BudgetExpense[];
 };
 
 export type Balance = {

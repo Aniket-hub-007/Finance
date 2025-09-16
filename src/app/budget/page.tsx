@@ -18,34 +18,57 @@ import {
 } from '@/components/ui/table';
 import { cn } from "@/lib/utils";
 import { useAppContext } from "@/context/app-provider";
-import { startOfMonth, endOfMonth, format } from 'date-fns';
+import { startOfMonth, endOfMonth, format, parseISO, isWithinInterval } from 'date-fns';
 
 export default function BudgetPage() {
-    const { budgets, addBudget, updateBudget, deleteBudget, isLoading } = useAppContext();
+    const { budgets, addBudget, updateBudget, deleteBudget, isLoading, transactions } = useAppContext();
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [selectedBudget, setSelectedBudget] = useState<Budget | undefined>(undefined);
 
-    const { monthlySpent, remainingBudget, overspentBudgetsCount } = useMemo(() => {
-        let monthlySpent = 0;
-        let totalBudget = 0;
-        let overspentBudgetsCount = 0;
+    const currentMonthInterval = {
+      start: startOfMonth(new Date()),
+      end: endOfMonth(new Date())
+    };
 
-        budgets.forEach(budget => {
-            const totalExpenses = budget.expenses.reduce((acc, expense) => acc + expense.amount, 0);
-            monthlySpent += totalExpenses;
-            totalBudget += budget.amount;
+    const monthlyTransactions = useMemo(() => 
+        transactions.filter(t => t.date && isWithinInterval(parseISO(t.date), currentMonthInterval) && t.type === 'expense'),
+    [transactions, currentMonthInterval]);
+
+    const { monthlySpent, remainingBudget, overspentBudgetsCount, budgetsWithExpenses } = useMemo(() => {
+        let totalMonthlySpent = 0;
+        let totalBudgetAmount = 0;
+        let overspentCount = 0;
+
+        const budgetsWithExpenses = budgets.map(budget => {
+            const expensesForBudget = monthlyTransactions.filter(t => t.category.toLowerCase() === budget.name.toLowerCase());
+            const totalExpenses = expensesForBudget.reduce((acc, expense) => acc + expense.amount, 0);
+            
             if (totalExpenses > budget.amount) {
-                overspentBudgetsCount++;
+                overspentCount++;
             }
+            
+            totalMonthlySpent += totalExpenses;
+            totalBudgetAmount += budget.amount;
+
+            return {
+                ...budget,
+                totalExpenses,
+                expenses: expensesForBudget,
+            };
         });
 
-        const remainingBudget = totalBudget - monthlySpent;
+        const remaining = totalBudgetAmount - totalMonthlySpent;
 
-        return { monthlySpent, remainingBudget, overspentBudgetsCount };
-    }, [budgets]);
+        return { 
+            monthlySpent: totalMonthlySpent, 
+            remainingBudget: remaining, 
+            overspentBudgetsCount: overspentCount,
+            budgetsWithExpenses
+        };
+    }, [budgets, monthlyTransactions]);
 
-    const monthStartDate = format(startOfMonth(new Date()), 'MMMM d, yyyy');
-    const monthEndDate = format(endOfMonth(new Date()), 'MMMM d, yyyy');
+    const monthStartDate = format(currentMonthInterval.start, 'MMMM d, yyyy');
+    const monthEndDate = format(currentMonthInterval.end, 'MMMM d, yyyy');
 
      const handleAdd = () => {
         setSelectedBudget(undefined);
@@ -61,7 +84,7 @@ export default function BudgetPage() {
         await deleteBudget(budget);
     }
 
-    const handleFormSubmit = async (budget: Omit<Budget, 'id' | '_id'>) => {
+    const handleFormSubmit = async (budget: Omit<Budget, 'id' | '_id' | 'expenses'>) => {
         if(selectedBudget) {
             await updateBudget({ ...budget, id: selectedBudget.id, _id: selectedBudget._id });
         } else {
@@ -127,10 +150,9 @@ export default function BudgetPage() {
             </Card>
 
             <div className="grid gap-6">
-                {budgets.map(budget => {
-                    const totalExpenses = budget.expenses.reduce((acc, expense) => acc + expense.amount, 0);
-                    const remaining = budget.amount - totalExpenses;
-                    const progress = (totalExpenses / budget.amount) * 100;
+                {budgetsWithExpenses.map(budget => {
+                    const remaining = budget.amount - budget.totalExpenses;
+                    const progress = (budget.totalExpenses / budget.amount) * 100;
 
                     return (
                         <Card key={budget.id}>
@@ -151,7 +173,7 @@ export default function BudgetPage() {
                                 <div className="space-y-4">
                                     <div className="space-y-2">
                                         <div className="flex justify-between items-center">
-                                            <p className="text-muted-foreground">Spent: <span className="font-semibold text-foreground">₹{totalExpenses.toLocaleString()}</span></p>
+                                            <p className="text-muted-foreground">Spent: <span className="font-semibold text-foreground">₹{budget.totalExpenses.toLocaleString()}</span></p>
                                             <p className={cn(
                                                 "font-semibold",
                                                 remaining >= 0 ? "text-accent" : "text-destructive"
@@ -164,17 +186,22 @@ export default function BudgetPage() {
                                     <Table>
                                         <TableHeader>
                                             <TableRow>
-                                                <TableHead>Category</TableHead>
+                                                <TableHead>Description</TableHead>
                                                 <TableHead className="text-right">Amount</TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
                                             {budget.expenses.map((expense, index) => (
                                                 <TableRow key={index}>
-                                                    <TableCell>{expense.category}</TableCell>
+                                                    <TableCell>{expense.description}</TableCell>
                                                     <TableCell className="text-right">₹{expense.amount.toLocaleString()}</TableCell>
                                                 </TableRow>
                                             ))}
+                                            {budget.expenses.length === 0 && (
+                                                <TableRow>
+                                                    <TableCell colSpan={2} className="text-center text-muted-foreground">No expenses for this budget this month.</TableCell>
+                                                </TableRow>
+                                            )}
                                         </TableBody>
                                     </Table>
                                 </div>

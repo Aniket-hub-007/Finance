@@ -11,10 +11,9 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useForm, useFieldArray } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import type { Budget } from '@/lib/types';
 import { useEffect } from 'react';
-import { PlusCircle, XCircle } from 'lucide-react';
 
 type BudgetFormProps = {
   isOpen: boolean;
@@ -24,17 +23,11 @@ type BudgetFormProps = {
 };
 
 export function BudgetForm({ isOpen, onClose, onSubmit, budget }: BudgetFormProps) {
-  const { register, control, handleSubmit, reset } = useForm<Omit<Budget, 'id' | '_id'>>({
+  const { register, handleSubmit, reset } = useForm<Omit<Budget, 'id' | '_id'>>({
     defaultValues: {
       name: '',
       amount: 0,
-      expenses: [{ category: '', amount: 0 }]
     }
-  });
-
-  const { fields, append, remove } = useFieldArray({
-    control,
-    name: "expenses"
   });
 
   useEffect(() => {
@@ -46,7 +39,6 @@ export function BudgetForm({ isOpen, onClose, onSubmit, budget }: BudgetFormProp
             reset({
                 name: '',
                 amount: 0,
-                expenses: [{ category: '', amount: 0 }],
             });
         }
     }
@@ -62,44 +54,11 @@ export function BudgetForm({ isOpen, onClose, onSubmit, budget }: BudgetFormProp
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="name" className="text-right">Name</Label>
-              <Input id="name" {...register('name', { required: true })} className="col-span-3" />
+              <Input id="name" {...register('name', { required: true })} className="col-span-3" placeholder="e.g., Groceries" />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="amount" className="text-right">Budget Amount</Label>
               <Input id="amount" type="number" {...register('amount', { required: true, valueAsNumber: true })} className="col-span-3" />
-            </div>
-
-            <div>
-              <Label className="mb-2 block text-center">Expenses</Label>
-              <div className="space-y-2">
-                {fields.map((item, index) => (
-                  <div key={item.id} className="flex items-center gap-2">
-                    <Input
-                      {...register(`expenses.${index}.category`, { required: true })}
-                      placeholder="Category"
-                      className="flex-1"
-                    />
-                    <Input
-                      type="number"
-                      {...register(`expenses.${index}.amount`, { required: true, valueAsNumber: true })}
-                      placeholder="Amount"
-                    />
-                    <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)}>
-                      <XCircle className="h-5 w-5 text-muted-foreground" />
-                    </Button>
-                  </div>
-                ))}
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="gap-1 mt-2"
-                  onClick={() => append({ category: '', amount: 0 })}
-                >
-                  <PlusCircle className="h-4 w-4" />
-                  Add Expense
-                </Button>
-              </div>
             </div>
           </div>
 

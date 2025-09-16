@@ -18,8 +18,8 @@ import {
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Wallet, Smartphone, Landmark, Pencil, PiggyBank, CreditCard, TrendingUp, TrendingDown } from 'lucide-react';
-import { Line, LineChart } from 'recharts';
-import { ChartTooltipContent, ChartContainer, ChartConfig, ChartTooltip } from '@/components/ui/chart';
+import { Line, LineChart, CartesianGrid, XAxis, YAxis, Tooltip as RechartsTooltip } from 'recharts';
+import { ChartTooltipContent, ChartContainer, ChartConfig } from '@/components/ui/chart';
 import { subDays, format } from 'date-fns';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -93,7 +93,20 @@ export default function DashboardPage() {
         <CardContent>
             <ChartContainer config={chartConfig} className="min-h-[200px] w-full">
                 <LineChart data={data} accessibilityLayer>
-                    <ChartTooltip 
+                     <CartesianGrid vertical={false} />
+                     <XAxis
+                        dataKey="name"
+                        tickLine={false}
+                        axisLine={false}
+                        tickMargin={8}
+                    />
+                    <YAxis
+                        tickLine={false}
+                        axisLine={false}
+                        tickMargin={8}
+                        tickFormatter={(value) => `₹${value}`}
+                    />
+                    <RechartsTooltip 
                         content={<ChartTooltipContent />}
                         cursor={{fill: 'hsl(var(--muted))'}}
                     />
@@ -296,4 +309,5 @@ export default function DashboardPage() {
       />
     </>
   );
-}
+
+    

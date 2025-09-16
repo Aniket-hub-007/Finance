@@ -78,7 +78,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [debts, setDebts] = useState<Debt[]>(initialMockDebts);
   const [lending, setLending] = useState<Lending[]>(initialMockLending);
   const [budgets, setBudgets] = useState<Budget[]>(initialMockBudgets);
-  const [isLoading, setIsLoading] = useState(false); // No need for loading state with mock data
+  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
   const updateBalances = async (newBalances: Balances) => {
@@ -123,9 +123,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     const originalTransaction = transactions.find(t => t.id === updatedTransaction.id);
     if(!originalTransaction) return;
 
-    // Revert old transaction amount
     await adjustBalance(originalTransaction, -1);
-    // Apply new transaction amount
     await adjustBalance(updatedTransaction, 1);
 
     setTransactions(prev => prev.map(t => (t.id === updatedTransaction.id ? updatedTransaction : t)));
@@ -167,7 +165,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const deleteDebt = async (debtToDelete: Debt) => {
     setDebts(prev => prev.filter(d => d.id !== debtToDelete.id));
     toast({ title: "Success", description: "Debt deleted." });
-_id
+  };
+
   // Lending
   const addLending = async (lendingItem: Omit<Lending, 'id' | '_id'>) => {
     const newId = (lending.length + 1).toString();

@@ -139,7 +139,6 @@ export default function DashboardPage() {
      </Card>
   );
 
-
   return (
     <>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -301,7 +300,7 @@ export default function DashboardPage() {
               <CardDescription>
                 Your progress towards your financial goals.
               </CardDescription>
-            </Header>
+            </CardHeader>
             <CardContent>
               {savingsGoals.map(goal => (
                 <div key={goal.id} className="mb-4 last:mb-0">
@@ -331,4 +330,5 @@ export default function DashboardPage() {
       />
     </>
   );
-}
+
+    

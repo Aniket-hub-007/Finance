@@ -27,7 +27,7 @@ export async function GET() {
         _id: result.insertedId,
       };
     }
-    const response = { ...balances, id: balances._id.toString() };
+    const response = { ...balances, id: balances._id.toString(), _id: balances._id.toString() };
     return NextResponse.json({ success: true, data: response });
   } catch (error) {
     console.error(error);
@@ -56,7 +56,8 @@ export async function PUT(request: Request) {
             return NextResponse.json({ success: false, error: 'Balance document not found' }, { status: 404 });
         }
 
-        const updatedBalances = { ...dataToUpdate, id: currentBalanceDoc._id.toString(), _id: currentBalanceDoc._id };
+        const updatedDocument = await collection.findOne({ _id: currentBalanceDoc._id });
+        const updatedBalances = { ...updatedDocument, id: currentBalanceDoc._id.toString(), _id: currentBalanceDoc._id.toString() };
         return NextResponse.json({ success: true, data: updatedBalances });
 
     } catch (error) {

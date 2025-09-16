@@ -55,7 +55,7 @@ export async function PUT(request: Request) {
         if (result.matchedCount === 0) {
             return NextResponse.json({ success: false, error: 'Budget not found' }, { status: 404 });
         }
-        const updatedBudget = { ...dataToUpdate, id, _id: id };
+        const updatedBudget = { ...dataToUpdate, id, _id: new ObjectId(id) };
         return NextResponse.json({ success: true, data: updatedBudget });
     } catch (error) {
         console.error(error);

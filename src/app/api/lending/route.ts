@@ -55,7 +55,7 @@ export async function PUT(request: Request) {
         if (result.matchedCount === 0) {
             return NextResponse.json({ success: false, error: 'Lending item not found' }, { status: 404 });
         }
-        const updatedLending = { ...dataToUpdate, id, _id: id };
+        const updatedLending = { ...dataToUpdate, id, _id: new ObjectId(id) };
         return NextResponse.json({ success: true, data: updatedLending });
     } catch (error) {
         console.error(error);

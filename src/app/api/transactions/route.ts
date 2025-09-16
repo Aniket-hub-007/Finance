@@ -22,7 +22,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const transaction: Omit<Transaction, 'id'> = await request.json();
+    const transaction: Omit<Transaction, 'id' | '_id'> = await request.json();
     const db = await getDb();
     const result = await db.collection('transactions').insertOne(transaction);
     const newTransaction = { ...transaction, _id: result.insertedId, id: result.insertedId.toString() };

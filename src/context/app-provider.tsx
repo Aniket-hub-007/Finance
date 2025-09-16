@@ -20,6 +20,7 @@ interface AppContextType {
   savingsGoals: SavingsGoal[];
   debts: Debt[];
   lending: Lending[];
+  setLending: (lending: Lending[]) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -90,7 +91,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     setBalances,
     savingsGoals,
     debts,
-    lending
+    lending,
+    setLending,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

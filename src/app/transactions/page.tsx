@@ -19,15 +19,37 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Loader2, PlusCircle } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import type { Transaction } from '@/lib/types';
 import { TransactionForm } from '@/components/transactions/transaction-form';
 import { useAppContext } from '@/context/app-provider';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
 
 export default function TransactionsPage() {
     const { transactions, addTransaction, updateTransaction, deleteTransaction, isLoading } = useAppContext();
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [selectedTransaction, setSelectedTransaction] = useState<Transaction | undefined>(undefined);
+    const [selectedCategory, setSelectedCategory] = useState('all');
+    const [selectedPaymentMode, setSelectedPaymentMode] = useState('all');
+
+    const expenseCategories = useMemo(() => {
+        const categories = new Set(transactions.filter(t => t.type === 'expense').map(t => t.category));
+        return ['all', ...Array.from(categories)];
+    }, [transactions]);
+    
+    const paymentMethods = useMemo(() => {
+        const methods = new Set(transactions.map(t => t.paymentMethod));
+        return ['all', ...Array.from(methods)];
+    }, [transactions]);
+
+    const filteredTransactions = useMemo(() => {
+        return transactions.filter(t => {
+            const categoryMatch = selectedCategory === 'all' || t.category === selectedCategory;
+            const paymentModeMatch = selectedPaymentMode === 'all' || t.paymentMethod === selectedPaymentMode;
+            return categoryMatch && paymentModeMatch;
+        });
+    }, [transactions, selectedCategory, selectedPaymentMode]);
 
     const handleAdd = () => {
         setSelectedTransaction(undefined);
@@ -58,6 +80,43 @@ export default function TransactionsPage() {
 
   return (
     <>
+    <Card className="mb-8">
+        <CardHeader>
+          <CardTitle>Filters</CardTitle>
+          <CardDescription>Filter transactions by category and payment method.</CardDescription>
+        </CardHeader>
+        <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="category-filter">Category</Label>
+                <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                  <SelectTrigger id="category-filter">
+                    <SelectValue placeholder="Select a category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {expenseCategories.map(cat => (
+                      <SelectItem key={cat} value={cat} className="capitalize">{cat}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="payment-mode-filter">Payment Mode</Label>
+                <Select value={selectedPaymentMode} onValueChange={setSelectedPaymentMode}>
+                  <SelectTrigger id="payment-mode-filter">
+                    <SelectValue placeholder="Select a payment mode" />
+                  </SelectTrigger>
+                  <SelectContent>
+                     {paymentMethods.map(method => (
+                      <SelectItem key={method} value={method} className="capitalize">{method}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+        </CardContent>
+      </Card>
+
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
@@ -88,7 +147,7 @@ export default function TransactionsPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {transactions.map((tx) => (
+            {filteredTransactions.map((tx) => (
               <TableRow key={tx.id as string}>
                 <TableCell className="font-medium">{tx.description}</TableCell>
                 <TableCell>

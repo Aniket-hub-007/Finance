@@ -56,7 +56,7 @@ export async function PUT(request: Request) {
             return NextResponse.json({ success: false, error: 'Budget not found' }, { status: 404 });
         }
         const updatedBudget = { ...dataToUpdate, id, _id: new ObjectId(id) };
-        return NextResponse.json({ success: true, data: updatedBudget });
+        return NextResponse.json({ success: true, data: { ...updatedBudget, _id: updatedBudget._id.toString() } });
     } catch (error) {
         console.error(error);
         return NextResponse.json({ success: false, error: 'Failed to update budget' }, { status: 500 });

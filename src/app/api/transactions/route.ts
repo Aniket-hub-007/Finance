@@ -13,11 +13,10 @@ export async function GET() {
   try {
     const db = await getDb();
     const transactions = await db.collection('transactions').find({}).sort({ date: -1 }).toArray();
-    // Manually map over the transactions to convert ObjectId to string
     const sanitizedTransactions = transactions.map(tx => ({
         ...tx,
         id: tx._id.toString(),
-        _id: tx._id.toString(), // Also ensure _id is a string for consistency
+        _id: tx._id.toString(),
     }));
     return NextResponse.json({ success: true, data: sanitizedTransactions });
   } catch (error) {
@@ -31,7 +30,7 @@ export async function POST(request: Request) {
     const transaction: Omit<Transaction, 'id' | '_id'> = await request.json();
     const db = await getDb();
     const result = await db.collection('transactions').insertOne(transaction);
-    const newTransaction = { ...transaction, _id: result.insertedId.toString(), id: result.insertedId.toString() };
+    const newTransaction = { ...transaction, _id: result.insertedId, id: result.insertedId.toString() };
     return NextResponse.json({ success: true, data: newTransaction }, { status: 201 });
   } catch (error) {
     console.error(error);
@@ -42,13 +41,13 @@ export async function POST(request: Request) {
 export async function PUT(request: Request) {
     try {
         const transaction: Transaction = await request.json();
-        const { id, ...dataToUpdate } = transaction; // Exclude id from dataToUpdate
+        const { id, ...dataToUpdate } = transaction; 
         if (!id) {
              return NextResponse.json({ success: false, error: 'Transaction ID is required' }, { status: 400 });
         }
         const db = await getDb();
 
-        // @ts-ignore - We are intentionally removing _id from the update payload
+        // @ts-ignore
         delete dataToUpdate._id;
 
         const result = await db.collection('transactions').updateOne(
@@ -60,8 +59,8 @@ export async function PUT(request: Request) {
             return NextResponse.json({ success: false, error: 'Transaction not found' }, { status: 404 });
         }
 
-        const updatedTransaction = { ...dataToUpdate, id: id, _id: id };
-        return NextResponse.json({ success: true, data: updatedTransaction });
+        const updatedTransaction = { ...dataToUpdate, id: id, _id: new ObjectId(id) };
+        return NextResponse.json({ success: true, data: { ...updatedTransaction, _id: updatedTransaction._id.toString() } });
     } catch (error) {
         console.error(error);
         return NextResponse.json({ success: false, error: 'Failed to update transaction' }, { status: 500 });

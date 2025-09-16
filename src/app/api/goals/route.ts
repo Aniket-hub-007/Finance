@@ -56,7 +56,7 @@ export async function PUT(request: Request) {
             return NextResponse.json({ success: false, error: 'Goal not found' }, { status: 404 });
         }
         const updatedGoal = { ...dataToUpdate, id, _id: new ObjectId(id) };
-        return NextResponse.json({ success: true, data: updatedGoal });
+        return NextResponse.json({ success: true, data: { ...updatedGoal, _id: updatedGoal._id.toString() } });
     } catch (error) {
         console.error(error);
         return NextResponse.json({ success: false, error: 'Failed to update goal' }, { status: 500 });

@@ -56,7 +56,7 @@ export async function PUT(request: Request) {
             return NextResponse.json({ success: false, error: 'Debt not found' }, { status: 404 });
         }
         const updatedDebt = { ...dataToUpdate, id, _id: new ObjectId(id) };
-        return NextResponse.json({ success: true, data: updatedDebt });
+        return NextResponse.json({ success: true, data: { ...updatedDebt, _id: updatedDebt._id.toString() } });
     } catch (error) {
         console.error(error);
         return NextResponse.json({ success: false, error: 'Failed to update debt' }, { status: 500 });

@@ -19,7 +19,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Wallet, Smartphone, Landmark, Plus, PiggyBank, CreditCard, TrendingUp, TrendingDown } from 'lucide-react';
 import { Line, LineChart, CartesianGrid, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, Pie, PieChart, Cell } from 'recharts';
-import { ChartTooltip, ChartTooltipContent, ChartContainer, ChartConfig, ChartLegend, ChartLegendContent } from '@/components/ui/chart';
+import { ChartTooltipContent, ChartContainer, ChartConfig, ChartLegend, ChartLegendContent } from '@/components/ui/chart';
 import { subDays, format, startOfMonth, eachMonthOfInterval, subMonths, parseISO, isAfter } from 'date-fns';
 import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
@@ -420,11 +420,11 @@ export default function DashboardPage() {
                 <CardTitle className="font-headline">Expenses by Category</CardTitle>
                 <CardDescription>A breakdown of your spending by category.</CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="grid gap-4">
                 <ChartContainer config={categoryChartConfig} className="min-h-[200px] w-full">
                     <ResponsiveContainer width="100%" height={250}>
                         <PieChart>
-                        <ChartTooltip content={<ChartTooltipContent nameKey="amount" hideLabel />} />
+                        <ChartTooltipContent nameKey="amount" hideLabel />
                         <Pie data={expensesByCategory} dataKey="amount" nameKey="category" innerRadius={60}>
                             {expensesByCategory.map((entry, index) => (
                                 <Cell key={`cell-${index}`} fill={categoryChartConfig[entry.category]?.color} />
@@ -434,6 +434,22 @@ export default function DashboardPage() {
                         </PieChart>
                     </ResponsiveContainer>
                 </ChartContainer>
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Category</TableHead>
+                            <TableHead className="text-right">Total Spent</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {expensesByCategory.map((item) => (
+                            <TableRow key={item.category}>
+                                <TableCell className="font-medium capitalize">{item.category}</TableCell>
+                                <TableCell className="text-right">₹{item.amount.toLocaleString()}</TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
             </CardContent>
         </Card>
 

@@ -12,7 +12,7 @@ const getDb = async () => {
 export async function GET() {
   try {
     const db = await getDb();
-    const transactions = await db.collection('transactions').find({}).sort({ date: -1 }).toArray();
+    const transactions = await db.collection('transactions').find({}).toArray();
     const sanitizedTransactions = transactions.map(tx => ({
         ...tx,
         id: tx._id.toString(),

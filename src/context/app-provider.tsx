@@ -67,7 +67,9 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       ])
 
       const transactionsData = await transactionsRes.json();
-      if (transactionsData.success) setTransactions(transactionsData.data);
+      if (transactionsData.success) {
+        setTransactions(transactionsData.data.sort((a: Transaction, b: Transaction) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+      }
       
       const goalsData = await goalsRes.json();
       if (goalsData.success) setSavingsGoals(goalsData.data);

@@ -5,9 +5,9 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { getChartSuggestion } from '@/app/reports/actions';
 import type { VisualizeSpendingViaChartsOutput } from '@/ai/flows/visualize-spending-via-charts';
-import { Loader2, BarChart as BarChartIcon, PieChart, LineChart } from 'lucide-react';
+import { Loader2, BarChart as BarChartIcon, PieChart, LineChart as LineChartIcon } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ResponsiveContainer, Bar, XAxis, YAxis, Tooltip, Pie, Cell, Line, BarChart } from 'recharts';
+import { ResponsiveContainer, Bar, XAxis, YAxis, Tooltip, Pie, Cell, Line, BarChart, LineChart } from 'recharts';
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig } from '@/components/ui/chart';
 import { toast } from '@/hooks/use-toast';
 

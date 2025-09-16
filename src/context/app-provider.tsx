@@ -2,7 +2,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
-import type { Transaction, Balances, SavingsGoal, Debt, Lending, Budget } from '@/lib/types';
+import type { Transaction, Balance, SavingsGoal, Debt, Lending, Budget } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 
 interface AppContextType {
@@ -11,8 +11,8 @@ interface AppContextType {
   updateTransaction: (transaction: Transaction) => Promise<void>;
   deleteTransaction: (transaction: Transaction) => Promise<void>;
   
-  balances: Balances;
-  updateBalances: (balances: Balances) => Promise<void>;
+  balances: Balance[];
+  addBalance: (balance: Omit<Balance, 'id' | '_id'>) => Promise<void>;
   
   savingsGoals: SavingsGoal[];
   addGoal: (goal: Omit<SavingsGoal, 'id' | '_id'>) => Promise<void>;
@@ -41,7 +41,7 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [balances, setBalances] = useState<Balances>({ bank: 0, upi: 0, cash: 0 });
+  const [balances, setBalances] = useState<Balance[]>([]);
   const [savingsGoals, setSavingsGoals] = useState<SavingsGoal[]>([]);
   const [debts, setDebts] = useState<Debt[]>([]);
   const [lending, setLending] = useState<Lending[]>([]);
@@ -68,7 +68,9 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         }
 
         const balancesData = await balancesRes.json();
-        if (balancesData.success) setBalances(balancesData.data);
+        if (balancesData.success) {
+            setBalances(balancesData.data);
+        }
         
         const goalsData = await goalsRes.json();
         if (goalsData.success) setSavingsGoals(goalsData.data);
@@ -105,20 +107,22 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       body: body ? JSON.stringify(body) : undefined,
     });
     if (!response.ok) {
-      throw new Error(`API request failed: ${method} ${url}`);
+      const errorData = await response.json().catch(() => ({ error: 'API request failed' }));
+      throw new Error(errorData.error || `API request failed: ${method} ${url}`);
     }
     return response.json();
   }
   
-  const updateBalances = async (newBalances: Balances) => {
+  // Balances
+  const addBalance = async (balance: Omit<Balance, 'id' | '_id'>) => {
     try {
-      const result = await apiRequest('/api/balances', 'POST', newBalances);
+      const result = await apiRequest('/api/balances', 'POST', balance);
       if (result.success) {
-        setBalances(result.data);
-        toast({ title: "Success", description: "Balances updated." });
+        setBalances(prev => [result.data, ...prev].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+        toast({ title: "Success", description: "Balance record added." });
       }
     } catch (error) {
-       toast({ variant: "destructive", title: "Error", description: "Failed to update balances." });
+       toast({ variant: "destructive", title: "Error", description: "Failed to add balance record." });
     }
   };
 
@@ -295,7 +299,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     updateTransaction,
     deleteTransaction,
     balances,
-    updateBalances,
+    addBalance,
     savingsGoals,
     addGoal,
     updateGoal,

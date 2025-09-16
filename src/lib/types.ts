@@ -58,9 +58,10 @@ export type Budget = {
   expenses: BudgetExpense[];
 };
 
-export type Balances = {
-  id?: string;
-  _id?: string;
+export type Balance = {
+  id: string;
+  _id: string;
+  date: string;
   bank: number;
   upi: number;
   cash: number;

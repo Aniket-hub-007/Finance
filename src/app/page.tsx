@@ -17,15 +17,15 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Wallet, Smartphone, Landmark, Pencil, PiggyBank, CreditCard, TrendingUp, TrendingDown } from 'lucide-react';
+import { Wallet, Smartphone, Landmark, Plus, PiggyBank, CreditCard, TrendingUp, TrendingDown } from 'lucide-react';
 import { Line, LineChart, CartesianGrid, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
 import { ChartTooltipContent, ChartContainer, ChartConfig } from '@/components/ui/chart';
-import { subDays, format, startOfMonth, eachMonthOfInterval, subMonths } from 'date-fns';
+import { subDays, format, startOfMonth, eachMonthOfInterval, subMonths, parseISO } from 'date-fns';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { BalanceEditForm } from '@/components/dashboard/balance-edit-form';
 import { useAppContext } from '@/context/app-provider';
-import type { Balances } from '@/lib/types';
+import type { Balance } from '@/lib/types';
 
 const chartConfig = {
   balance: {
@@ -43,18 +43,20 @@ const chartConfig = {
 } satisfies ChartConfig;
 
 export default function DashboardPage() {
-  const { balances, updateBalances, transactions, savingsGoals, debts, lending } = useAppContext();
+  const { balances, addBalance, transactions, savingsGoals, debts, lending } = useAppContext();
   const [isEditFormOpen, setIsEditFormOpen] = useState(false);
 
-  const totalBalance = balances.bank + balances.upi + balances.cash;
+  const latestBalance = balances.length > 0 ? balances[0] : { bank: 0, upi: 0, cash: 0 };
+  const totalBalance = latestBalance.bank + latestBalance.upi + latestBalance.cash;
+  
   const totalExpenses = transactions.filter(t => t.type === 'expense').reduce((acc, t) => acc + Math.abs(t.amount), 0);
   const totalSavings = savingsGoals.reduce((acc, goal) => acc + goal.currentAmount, 0);
   const totalDebts = debts.reduce((acc, debt) => acc + debt.currentBalance, 0);
   const totalLent = lending.filter(l => l.status === 'Pending').reduce((acc, l) => acc + l.amount, 0);
 
 
-  const handleBalanceUpdate = async (newBalances: Balances) => {
-    await updateBalances(newBalances);
+  const handleBalanceUpdate = async (newBalance: Omit<Balance, 'id' | '_id'>) => {
+    await addBalance(newBalance);
     setIsEditFormOpen(false);
   };
 
@@ -67,7 +69,11 @@ export default function DashboardPage() {
       .filter(t => t.type === 'expense' && new Date(t.date).toDateString() === date.toDateString())
       .reduce((acc, t) => acc + Math.abs(t.amount), 0);
     const dailySavings = savingsGoals.reduce((acc, goal) => acc + (goal.currentAmount / 30), 0) / 7; // simplified
-    return { name: day, expense: dailyExpenses, savings: dailySavings, balance: totalBalance - (dailyExpenses * (7-i)) }; // simplified balance
+    
+    const balanceOnDate = balances.find(b => format(parseISO(b.date), 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd'));
+    const balance = balanceOnDate ? balanceOnDate.bank + balanceOnDate.upi + balanceOnDate.cash : 0;
+    
+    return { name: day, expense: dailyExpenses, savings: dailySavings, balance };
   });
 
   const weeklyData = Array.from({ length: 4 }, (_, i) => {
@@ -76,7 +82,8 @@ export default function DashboardPage() {
         .filter(t => new Date(t.date) > subDays(today, (4-i)*7) && new Date(t.date) <= subDays(today, (3-i)*7))
         .reduce((acc, t) => acc + Math.abs(t.amount), 0);
     const weeklySavings = savingsGoals.reduce((acc, goal) => acc + (goal.currentAmount / 4), 0); // simplified
-    return { name: week, expense: weeklyExpenses, savings: weeklySavings, balance: totalBalance - (weeklyExpenses * (4-i)) };
+    const balance = totalBalance - (weeklyExpenses * (4-i)); // simplified
+    return { name: week, expense: weeklyExpenses, savings: weeklySavings, balance: balance };
   });
 
   const last4Months = eachMonthOfInterval({
@@ -90,10 +97,11 @@ export default function DashboardPage() {
       .filter(t => t.type === 'expense' && format(new Date(t.date), 'yyyy-MM') === format(month, 'yyyy-MM'))
       .reduce((acc, t) => acc + Math.abs(t.amount), 0);
     
-    // Simplified savings and balance for demonstration
     const monthlySavings = savingsGoals.reduce((acc, goal) => acc + (goal.currentAmount / 4), 0); 
     const monthIndex = last4Months.length - last4Months.indexOf(month) - 1;
-    const balance = totalBalance - (monthlyExpenses * (monthIndex + 1));
+
+    const balanceEntryForMonth = balances.find(b => format(parseISO(b.date), 'yyyy-MM') === format(month, 'yyyy-MM'));
+    const balance = balanceEntryForMonth ? balanceEntryForMonth.bank + balanceEntryForMonth.upi + balanceEntryForMonth.cash : 0;
 
     return { name: monthName, expense: monthlyExpenses, savings: monthlySavings, balance: balance };
   });
@@ -140,12 +148,12 @@ export default function DashboardPage() {
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Balance</CardTitle>
             <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setIsEditFormOpen(true)}>
-                <Pencil className="h-4 w-4 text-muted-foreground" />
+                <Plus className="h-4 w-4 text-muted-foreground" />
             </Button>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">₹{totalBalance.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground">Across all accounts</p>
+            <p className="text-xs text-muted-foreground">Latest balance record</p>
           </CardContent>
         </Card>
         <Card>
@@ -154,7 +162,7 @@ export default function DashboardPage() {
             <Landmark className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">₹{balances.bank.toLocaleString()}</div>
+            <div className="text-2xl font-bold">₹{latestBalance.bank.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">In your bank accounts</p>
           </CardContent>
         </Card>
@@ -164,7 +172,7 @@ export default function DashboardPage() {
             <Smartphone className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">₹{balances.upi.toLocaleString()}</div>
+            <div className="text-2xl font-bold">₹{latestBalance.upi.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">In your UPI apps</p>
           </CardContent>
         </Card>
@@ -174,7 +182,7 @@ export default function DashboardPage() {
             <Wallet className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">₹{balances.cash.toLocaleString()}</div>
+            <div className="text-2xl font-bold">₹{latestBalance.cash.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">Physical cash</p>
           </CardContent>
         </Card>
@@ -294,7 +302,7 @@ export default function DashboardPage() {
               <CardDescription>
                 Your progress towards your financial goals.
               </CardDescription>
-            </CardHeader>
+            </Header>
             <CardContent>
               {savingsGoals.map(goal => (
                 <div key={goal.id} className="mb-4 last:mb-0">
@@ -320,7 +328,7 @@ export default function DashboardPage() {
         isOpen={isEditFormOpen}
         onClose={() => setIsEditFormOpen(false)}
         onSubmit={handleBalanceUpdate}
-        currentBalances={balances}
+        currentBalance={latestBalance}
       />
     </>
   );

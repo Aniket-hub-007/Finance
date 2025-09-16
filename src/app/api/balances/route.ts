@@ -37,7 +37,11 @@ export async function GET() {
 
 export async function PUT(request: Request) {
     try {
-        const { id, _id, ...dataToUpdate }: Balances = await request.json();
+        const dataToUpdate: Partial<Balances> = await request.json();
+        
+        // Remove id/_id fields if they exist, as we don't want to set them.
+        delete dataToUpdate.id;
+        delete dataToUpdate._id;
         
         const collection = await getCollection();
         

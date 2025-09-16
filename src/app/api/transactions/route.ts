@@ -13,7 +13,9 @@ export async function GET() {
   try {
     const db = await getDb();
     const transactions = await db.collection('transactions').find({}).toArray();
-    const sanitizedTransactions = transactions.map(tx => ({
+    const sanitizedTransactions = transactions
+      .filter(tx => tx && tx._id) // Filter out any malformed documents
+      .map(tx => ({
         ...tx,
         id: tx._id.toString(),
         _id: tx._id.toString(),

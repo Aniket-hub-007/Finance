@@ -4,8 +4,8 @@ import type { ObjectId } from 'mongodb';
 
 
 export type Transaction = {
-  id: string | number | ObjectId;
-  _id?: string | number | ObjectId;
+  id: string;
+  _id: string;
   description: string;
   amount: number;
   date: string;
@@ -15,7 +15,8 @@ export type Transaction = {
 };
 
 export type SavingsGoal = {
-  id: string | number;
+  id: string;
+  _id: string;
   name: string;
   currentAmount: number;
   targetAmount: number;
@@ -23,7 +24,8 @@ export type SavingsGoal = {
 };
 
 export type Debt = {
-  id: string | number;
+  id: string;
+  _id: string;
   name: string;
   initialAmount: number;
   currentBalance: number;
@@ -31,7 +33,8 @@ export type Debt = {
 };
 
 export type Lending = {
-    id: string | number;
+    id: string;
+    _id: string;
     borrower: string;
     amount: number;
     status: 'Pending' | 'Paid';
@@ -50,7 +53,8 @@ export type BudgetExpense = {
 };
 
 export type Budget = {
-  id: string | number;
+  id: string;
+  _id: string;
   name: string;
   amount: number;
   expenses: BudgetExpense[];
@@ -61,3 +65,4 @@ export type Balances = {
   upi: number;
   cash: number;
 };
+

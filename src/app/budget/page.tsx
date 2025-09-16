@@ -3,8 +3,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { budgets as initialBudgets } from "@/lib/data";
-import { PlusCircle, FileText } from "lucide-react";
+import { PlusCircle, FileText, Loader2 } from "lucide-react";
 import { useState } from "react";
 import type { Budget } from "@/lib/types";
 import { BudgetForm } from "@/components/budget/budget-form";
@@ -18,9 +17,10 @@ import {
 } from '@/components/ui/table';
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
+import { useAppContext } from "@/context/app-provider";
 
 export default function BudgetPage() {
-    const [budgets, setBudgets] = useState<Budget[]>(initialBudgets);
+    const { budgets, addBudget, updateBudget, deleteBudget, isLoading } = useAppContext();
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [selectedBudget, setSelectedBudget] = useState<Budget | undefined>(undefined);
 
@@ -34,17 +34,25 @@ export default function BudgetPage() {
         setIsFormOpen(true);
     }
 
-    const handleDelete = (id: string | number) => {
-        setBudgets(budgets.filter(d => d.id !== id));
+    const handleDelete = async (budget: Budget) => {
+        await deleteBudget(budget);
     }
 
-    const handleFormSubmit = (budget: Budget) => {
+    const handleFormSubmit = async (budget: Omit<Budget, 'id' | '_id'>) => {
         if(selectedBudget) {
-            setBudgets(budgets.map(b => b.id === budget.id ? budget : b));
+            await updateBudget({ ...budget, id: selectedBudget.id, _id: selectedBudget._id });
         } else {
-            setBudgets([...budgets, { ...budget, id: Date.now() }]);
+            await addBudget(budget);
         }
         setIsFormOpen(false);
+    }
+
+    if (isLoading) {
+        return (
+            <div className="flex justify-center items-center h-64">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+        )
     }
 
     return (
@@ -114,7 +122,7 @@ export default function BudgetPage() {
                             </CardContent>
                              <CardFooter className="flex justify-end gap-2">
                                 <Button variant="ghost" size="sm" onClick={() => handleEdit(budget)}>Edit</Button>
-                                <Button variant="ghost" size="sm" className="text-destructive" onClick={() => handleDelete(budget.id)}>Delete</Button>
+                                <Button variant="ghost" size="sm" className="text-destructive" onClick={() => handleDelete(budget)}>Delete</Button>
                             </CardFooter>
                         </Card>
                     );

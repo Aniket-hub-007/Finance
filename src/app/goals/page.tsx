@@ -4,15 +4,15 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { savingsGoals as initialSavingsGoals } from "@/lib/data";
-import { PlusCircle, Target } from "lucide-react";
+import { PlusCircle, Target, Loader2 } from "lucide-react";
 import { useState } from "react";
 import type { SavingsGoal } from "@/lib/types";
 import { GoalForm } from "@/components/goals/goal-form";
+import { useAppContext } from "@/context/app-provider";
 
 
 export default function GoalsPage() {
-    const [goals, setGoals] = useState<SavingsGoal[]>(initialSavingsGoals);
+    const { savingsGoals, addGoal, updateGoal, deleteGoal, isLoading } = useAppContext();
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [selectedGoal, setSelectedGoal] = useState<SavingsGoal | undefined>(undefined);
 
@@ -26,17 +26,25 @@ export default function GoalsPage() {
         setIsFormOpen(true);
     }
 
-    const handleDelete = (id: string | number) => {
-        setGoals(goals.filter(g => g.id !== id));
+    const handleDelete = async (goal: SavingsGoal) => {
+        await deleteGoal(goal);
     }
 
-    const handleFormSubmit = (goal: SavingsGoal) => {
+    const handleFormSubmit = async (goal: Omit<SavingsGoal, 'id' | '_id'>) => {
         if(selectedGoal) {
-            setGoals(goals.map(g => g.id === goal.id ? goal : g));
+            await updateGoal({ ...goal, id: selectedGoal.id, _id: selectedGoal._id });
         } else {
-            setGoals([...goals, { ...goal, id: Date.now() }]);
+            await addGoal(goal);
         }
         setIsFormOpen(false);
+    }
+
+    if (isLoading) {
+        return (
+            <div className="flex justify-center items-center h-64">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+        )
     }
 
     return (
@@ -52,7 +60,7 @@ export default function GoalsPage() {
                 </Button>
             </div>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {goals.map(goal => {
+                {savingsGoals.map(goal => {
                     const progress = (goal.currentAmount / goal.targetAmount) * 100;
                     return (
                         <Card key={goal.id}>
@@ -81,7 +89,7 @@ export default function GoalsPage() {
                                 )}
                                 <div className="flex gap-2">
                                      <Button variant="ghost" size="sm" onClick={() => handleEdit(goal)}>Edit</Button>
-                                     <Button variant="ghost" size="sm" className="text-destructive" onClick={() => handleDelete(goal.id)}>Delete</Button>
+                                     <Button variant="ghost" size="sm" className="text-destructive" onClick={() => handleDelete(goal)}>Delete</Button>
                                 </div>
                             </CardFooter>
                         </Card>
@@ -97,4 +105,3 @@ export default function GoalsPage() {
         </div>
     );
 }
-

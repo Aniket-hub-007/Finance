@@ -4,7 +4,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { PlusCircle } from "lucide-react";
+import { PlusCircle, Loader2 } from "lucide-react";
 import { useState } from "react";
 import type { Lending } from "@/lib/types";
 import { LendingForm } from "@/components/lending/lending-form";
@@ -12,7 +12,7 @@ import { useAppContext } from "@/context/app-provider";
 
 
 export default function LendingPage() {
-    const { lending: loans, setLending: setLoans } = useAppContext() as any;
+    const { lending: loans, addLending, updateLending, deleteLending, isLoading } = useAppContext();
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [selectedLoan, setSelectedLoan] = useState<Lending | undefined>(undefined);
 
@@ -26,17 +26,25 @@ export default function LendingPage() {
         setIsFormOpen(true);
     }
 
-    const handleDelete = (id: string | number) => {
-        setLoans(loans.filter((l: Lending) => l.id !== id));
+    const handleDelete = async (loan: Lending) => {
+        await deleteLending(loan);
     }
 
-    const handleFormSubmit = (loan: Lending) => {
+    const handleFormSubmit = async (loan: Omit<Lending, 'id' | '_id'>) => {
         if(selectedLoan) {
-            setLoans(loans.map((l: Lending) => l.id === loan.id ? loan : l));
+            await updateLending({ ...loan, id: selectedLoan.id, _id: selectedLoan._id });
         } else {
-            setLoans([...loans, { ...loan, id: Date.now() }]);
+            await addLending(loan);
         }
         setIsFormOpen(false);
+    }
+
+    if (isLoading) {
+        return (
+            <div className="flex justify-center items-center h-64">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+        )
     }
 
     return (
@@ -71,7 +79,7 @@ export default function LendingPage() {
                                 <TableCell className="text-right">₹{loan.amount.toFixed(2)}</TableCell>
                                 <TableCell className="text-right">
                                     <Button variant="ghost" size="sm" onClick={() => handleEdit(loan)}>Edit</Button>
-                                    <Button variant="ghost" size="sm" className="text-destructive" onClick={() => handleDelete(loan.id)}>Delete</Button>
+                                    <Button variant="ghost" size="sm" className="text-destructive" onClick={() => handleDelete(loan)}>Delete</Button>
                                 </TableCell>
                             </TableRow>
                        ))}

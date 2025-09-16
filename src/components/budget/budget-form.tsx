@@ -19,12 +19,12 @@ import { PlusCircle, XCircle } from 'lucide-react';
 type BudgetFormProps = {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: Budget) => void;
+  onSubmit: (data: Omit<Budget, 'id' | '_id'>) => void;
   budget?: Budget;
 };
 
 export function BudgetForm({ isOpen, onClose, onSubmit, budget }: BudgetFormProps) {
-  const { register, control, handleSubmit, reset } = useForm<Budget>({
+  const { register, control, handleSubmit, reset } = useForm<Omit<Budget, 'id' | '_id'>>({
     defaultValues: {
       name: '',
       amount: 0,
@@ -40,7 +40,8 @@ export function BudgetForm({ isOpen, onClose, onSubmit, budget }: BudgetFormProp
   useEffect(() => {
     if (isOpen) {
         if (budget) {
-            reset(budget);
+            const { id, _id, ...defaultValues } = budget;
+            reset(defaultValues);
         } else {
             reset({
                 name: '',

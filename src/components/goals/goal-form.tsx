@@ -18,23 +18,26 @@ import { useEffect } from 'react';
 type GoalFormProps = {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: SavingsGoal) => void;
+  onSubmit: (data: Omit<SavingsGoal, 'id' | '_id'>) => void;
   goal?: SavingsGoal;
 };
 
 export function GoalForm({ isOpen, onClose, onSubmit, goal }: GoalFormProps) {
-  const { register, handleSubmit, reset } = useForm<SavingsGoal>();
+  const { register, handleSubmit, reset } = useForm<Omit<SavingsGoal, 'id' | '_id'>>();
 
    useEffect(() => {
-    if (goal) {
-      reset(goal);
-    } else {
-      reset({
-        name: '',
-        currentAmount: 0,
-        targetAmount: 1000,
-        deadline: undefined,
-      });
+    if (isOpen) {
+        if (goal) {
+            const { id, _id, ...defaultValues } = goal;
+            reset(defaultValues);
+        } else {
+            reset({
+                name: '',
+                currentAmount: 0,
+                targetAmount: 1000,
+                deadline: undefined,
+            });
+        }
     }
   }, [goal, reset, isOpen]);
 

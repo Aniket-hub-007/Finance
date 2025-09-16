@@ -18,23 +18,26 @@ import { useEffect } from 'react';
 type DebtFormProps = {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: Debt) => void;
+  onSubmit: (data: Omit<Debt, 'id' | '_id'>) => void;
   debt?: Debt;
 };
 
 export function DebtForm({ isOpen, onClose, onSubmit, debt }: DebtFormProps) {
-  const { register, handleSubmit, reset } = useForm<Debt>();
+  const { register, handleSubmit, reset } = useForm<Omit<Debt, 'id' | '_id'>>();
 
    useEffect(() => {
-    if (debt) {
-      reset(debt);
-    } else {
-      reset({
-        name: '',
-        initialAmount: 0,
-        currentBalance: 0,
-        interestRate: 0,
-      });
+    if (isOpen) {
+        if (debt) {
+            const { id, _id, ...defaultValues } = debt;
+            reset(defaultValues);
+        } else {
+            reset({
+                name: '',
+                initialAmount: 0,
+                currentBalance: 0,
+                interestRate: 0,
+            });
+        }
     }
   }, [debt, reset, isOpen]);
 

@@ -4,14 +4,14 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { debts as initialDebts } from "@/lib/data";
-import { CreditCard, PlusCircle } from "lucide-react";
+import { CreditCard, PlusCircle, Loader2 } from "lucide-react";
 import { useState } from "react";
 import type { Debt } from "@/lib/types";
 import { DebtForm } from "@/components/debts/debt-form";
+import { useAppContext } from "@/context/app-provider";
 
 export default function DebtsPage() {
-    const [debts, setDebts] = useState<Debt[]>(initialDebts);
+    const { debts, addDebt, updateDebt, deleteDebt, isLoading } = useAppContext();
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [selectedDebt, setSelectedDebt] = useState<Debt | undefined>(undefined);
 
@@ -25,17 +25,25 @@ export default function DebtsPage() {
         setIsFormOpen(true);
     }
 
-    const handleDelete = (id: string | number) => {
-        setDebts(debts.filter(d => d.id !== id));
+    const handleDelete = async (debt: Debt) => {
+        await deleteDebt(debt);
     }
 
-    const handleFormSubmit = (debt: Debt) => {
+    const handleFormSubmit = async (debt: Omit<Debt, 'id' | '_id'>) => {
         if(selectedDebt) {
-            setDebts(debts.map(d => d.id === debt.id ? debt : d));
+            await updateDebt({ ...debt, id: selectedDebt.id, _id: selectedDebt._id });
         } else {
-            setDebts([...debts, { ...debt, id: Date.now() }]);
+            await addDebt(debt);
         }
         setIsFormOpen(false);
+    }
+
+    if (isLoading) {
+        return (
+            <div className="flex justify-center items-center h-64">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+        )
     }
 
     return (
@@ -76,7 +84,7 @@ export default function DebtsPage() {
                             </CardContent>
                              <CardFooter className="flex justify-end gap-2">
                                 <Button variant="ghost" size="sm" onClick={() => handleEdit(debt)}>Edit</Button>
-                                <Button variant="ghost" size="sm" className="text-destructive" onClick={() => handleDelete(debt.id)}>Delete</Button>
+                                <Button variant="ghost" size="sm" className="text-destructive" onClick={() => handleDelete(debt)}>Delete</Button>
                             </CardFooter>
                         </Card>
                     );
@@ -91,4 +99,3 @@ export default function DebtsPage() {
         </div>
     );
 }
-

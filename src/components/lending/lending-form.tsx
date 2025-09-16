@@ -25,23 +25,26 @@ import { useEffect } from 'react';
 type LendingFormProps = {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: Lending) => void;
+  onSubmit: (data: Omit<Lending, 'id' | '_id'>) => void;
   loan?: Lending;
 };
 
 export function LendingForm({ isOpen, onClose, onSubmit, loan }: LendingFormProps) {
-  const { register, handleSubmit, control, reset } = useForm<Lending>();
+  const { register, handleSubmit, control, reset } = useForm<Omit<Lending, 'id' | '_id'>>();
 
   useEffect(() => {
-    if (loan) {
-      reset(loan);
-    } else {
-      reset({
-        borrower: '',
-        amount: 0,
-        date: new Date().toISOString().split('T')[0],
-        status: 'Pending',
-      });
+    if (isOpen) {
+        if (loan) {
+            const { id, _id, ...defaultValues } = loan;
+            reset(defaultValues);
+        } else {
+            reset({
+                borrower: '',
+                amount: 0,
+                date: new Date().toISOString().split('T')[0],
+                status: 'Pending',
+            });
+        }
     }
   }, [loan, reset, isOpen]);
 
@@ -72,7 +75,7 @@ export function LendingForm({ isOpen, onClose, onSubmit, loan }: LendingFormProp
                 control={control}
                 defaultValue="Pending"
                 render={({ field }) => (
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select onValueChange={field.onChange} value={field.value}>
                     <SelectTrigger className="col-span-3">
                       <SelectValue placeholder="Select status" />
                     </SelectTrigger>

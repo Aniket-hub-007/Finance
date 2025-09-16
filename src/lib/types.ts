@@ -1,8 +1,11 @@
 
 import type { LucideIcon } from "lucide-react";
+import type { ObjectId } from 'mongodb';
+
 
 export type Transaction = {
-  id: string | number;
+  id: string | number | ObjectId;
+  _id?: string | number | ObjectId;
   description: string;
   amount: number;
   date: string;

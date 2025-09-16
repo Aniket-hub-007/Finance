@@ -25,7 +25,7 @@ import { useEffect } from 'react';
 type TransactionFormProps = {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: Transaction) => void;
+  onSubmit: (data: Omit<Transaction, 'id' | '_id'>) => void;
   transaction?: Transaction;
 };
 
@@ -35,12 +35,13 @@ export function TransactionForm({
   onSubmit,
   transaction,
 }: TransactionFormProps) {
-  const { register, handleSubmit, control, reset, formState: { errors } } = useForm<Transaction>();
+  const { register, handleSubmit, control, reset, formState: { errors } } = useForm<Omit<Transaction, 'id' | '_id'>>();
 
   useEffect(() => {
     if (isOpen) {
       if (transaction) {
-        reset(transaction);
+        const { id, _id, ...defaultValues } = transaction;
+        reset(defaultValues);
       } else {
         reset({
           description: '',

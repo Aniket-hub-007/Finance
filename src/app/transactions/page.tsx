@@ -18,14 +18,14 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { PlusCircle } from 'lucide-react';
+import { Loader2, PlusCircle } from 'lucide-react';
 import { useState } from 'react';
 import type { Transaction } from '@/lib/types';
 import { TransactionForm } from '@/components/transactions/transaction-form';
 import { useAppContext } from '@/context/app-provider';
 
 export default function TransactionsPage() {
-    const { transactions, addTransaction, updateTransaction, deleteTransaction } = useAppContext();
+    const { transactions, addTransaction, updateTransaction, deleteTransaction, isLoading } = useAppContext();
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [selectedTransaction, setSelectedTransaction] = useState<Transaction | undefined>(undefined);
 
@@ -39,18 +39,18 @@ export default function TransactionsPage() {
         setIsFormOpen(true);
     }
 
-    const handleDelete = (id: string | number) => {
+    const handleDelete = async (id: string | number) => {
         const transactionToDelete = transactions.find(t => t.id === id);
         if (transactionToDelete) {
-            deleteTransaction(transactionToDelete);
+            await deleteTransaction(transactionToDelete);
         }
     }
 
-    const handleFormSubmit = (transaction: Transaction) => {
+    const handleFormSubmit = async (transaction: Omit<Transaction, 'id' | '_id'>) => {
         if(selectedTransaction) {
-            updateTransaction(transaction);
+            await updateTransaction({ ...transaction, id: selectedTransaction.id, _id: selectedTransaction._id });
         } else {
-            addTransaction({ ...transaction, id: Date.now() });
+            await addTransaction(transaction);
         }
         setIsFormOpen(false);
     }
@@ -70,6 +70,11 @@ export default function TransactionsPage() {
         </Button>
       </CardHeader>
       <CardContent>
+        {isLoading ? (
+          <div className="flex justify-center items-center h-64">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          </div>
+        ) : (
         <Table>
           <TableHeader>
             <TableRow>
@@ -84,7 +89,7 @@ export default function TransactionsPage() {
           </TableHeader>
           <TableBody>
             {transactions.map((tx) => (
-              <TableRow key={tx.id}>
+              <TableRow key={tx.id as string}>
                 <TableCell className="font-medium">{tx.description}</TableCell>
                 <TableCell>
                   <Badge variant="outline">{tx.category}</Badge>
@@ -109,6 +114,7 @@ export default function TransactionsPage() {
             ))}
           </TableBody>
         </Table>
+        )}
       </CardContent>
     </Card>
     <TransactionForm 

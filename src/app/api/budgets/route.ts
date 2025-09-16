@@ -47,11 +47,7 @@ export async function PUT(request: Request) {
         }
         const collection = await getCollection();
         
-        const dataToUpdate = { ...budget };
-        // @ts-ignore
-        delete dataToUpdate._id;
-        // @ts-ignore
-        delete dataToUpdate.id;
+        const { _id, ...dataToUpdate } = budget;
 
         const result = await collection.updateOne(
             { _id: new ObjectId(id) },

@@ -8,11 +8,13 @@ import {
   Landmark,
   TrendingUp,
   Calculator,
+  DollarSign,
 } from 'lucide-react';
 
 export const navItems: NavItem[] = [
   { href: '/', icon: LayoutDashboard, label: 'Dashboard' },
   { href: '/transactions', icon: ArrowRightLeft, label: 'Transactions' },
+  { href: '/earnings', icon: DollarSign, label: 'Earnings' },
   { href: '/budget', icon: Calculator, label: 'Budget' },
   { href: '/reports', icon: TrendingUp, label: 'Reports' },
   { href: '/goals', icon: PiggyBank, label: 'Goals' },

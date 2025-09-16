@@ -2,7 +2,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
-import type { Transaction, Balance, SavingsGoal, Debt, Lending, Budget } from '@/lib/types';
+import type { Transaction, Balance, SavingsGoal, Debt, Lending, Budget, Earning } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 
 interface AppContextType {
@@ -34,6 +34,11 @@ interface AppContextType {
   updateBudget: (budget: Budget) => Promise<void>;
   deleteBudget: (budget: Budget) => Promise<void>;
 
+  earnings: Earning[];
+  addEarning: (earning: Omit<Earning, 'id' | '_id'>) => Promise<void>;
+  updateEarning: (earning: Earning) => Promise<void>;
+  deleteEarning: (earning: Earning) => Promise<void>;
+
   isLoading: boolean;
 }
 
@@ -46,6 +51,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [debts, setDebts] = useState<Debt[]>([]);
   const [lending, setLending] = useState<Lending[]>([]);
   const [budgets, setBudgets] = useState<Budget[]>([]);
+  const [earnings, setEarnings] = useState<Earning[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
@@ -53,13 +59,14 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        const [transactionsRes, balancesRes, goalsRes, debtsRes, lendingRes, budgetsRes] = await Promise.all([
+        const [transactionsRes, balancesRes, goalsRes, debtsRes, lendingRes, budgetsRes, earningsRes] = await Promise.all([
           fetch('/api/transactions'),
           fetch('/api/balances'),
           fetch('/api/goals'),
           fetch('/api/debts'),
           fetch('/api/lending'),
           fetch('/api/budgets'),
+          fetch('/api/earnings'),
         ]);
 
         const transactionsData = await transactionsRes.json();
@@ -83,6 +90,9 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
         const budgetsData = await budgetsRes.json();
         if (budgetsData.success) setBudgets(budgetsData.data);
+        
+        const earningsData = await earningsRes.json();
+        if (earningsData.success) setEarnings(earningsData.data);
 
       } catch (error) {
         console.error("Failed to fetch data", error);
@@ -292,6 +302,53 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       toast({ variant: "destructive", title: "Error", description: "Failed to delete budget." });
     }
   };
+  
+    // Earnings
+    const addEarning = async (earning: Omit<Earning, 'id' | '_id'>) => {
+      try {
+        const result = await apiRequest('/api/earnings', 'POST', earning);
+        if (result.success) {
+          setEarnings((prev) => [result.data, ...prev]);
+          toast({ title: 'Success', description: 'Earning added.' });
+        }
+      } catch (error) {
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: 'Failed to add earning.',
+        });
+      }
+    };
+    const updateEarning = async (updatedEarning: Earning) => {
+      try {
+        const result = await apiRequest('/api/earnings', 'PUT', updatedEarning);
+        if (result.success) {
+          setEarnings((prev) =>
+            prev.map((e) => (e.id === updatedEarning.id ? result.data : e))
+          );
+          toast({ title: 'Success', description: 'Earning updated.' });
+        }
+      } catch (error) {
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: 'Failed to update earning.',
+        });
+      }
+    };
+    const deleteEarning = async (earningToDelete: Earning) => {
+      try {
+        await apiRequest('/api/earnings', 'DELETE', { id: earningToDelete.id });
+        setEarnings((prev) => prev.filter((e) => e.id !== earningToDelete.id));
+        toast({ title: 'Success', description: 'Earning deleted.' });
+      } catch (error) {
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: 'Failed to delete earning.',
+        });
+      }
+    };
 
   const value = {
     transactions,
@@ -316,6 +373,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     addBudget,
     updateBudget,
     deleteBudget,
+    earnings,
+    addEarning,
+    updateEarning,
+    deleteEarning,
     isLoading
   };
 

@@ -60,3 +60,12 @@ export type Balance = {
   upi: number;
   cash: number;
 };
+
+export type Earning = {
+  id: string;
+  _id: string;
+  description: string;
+  amount: number;
+  date: string;
+  type: 'monthly' | '1 time';
+};

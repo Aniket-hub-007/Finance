@@ -41,13 +41,18 @@ export async function POST(request: Request) {
 export async function PUT(request: Request) {
     try {
         const lendingItem: Lending = await request.json();
-        const { id, ...dataToUpdate } = lendingItem;
+        const id = lendingItem.id;
         if (!id) {
              return NextResponse.json({ success: false, error: 'Lending ID is required' }, { status: 400 });
         }
         const collection = await getCollection();
+        
+        const dataToUpdate = { ...lendingItem };
         // @ts-ignore
         delete dataToUpdate._id;
+        // @ts-ignore
+        delete dataToUpdate.id;
+
         const result = await collection.updateOne(
             { _id: new ObjectId(id) },
             { $set: dataToUpdate }

@@ -41,14 +41,19 @@ export async function POST(request: Request) {
 export async function PUT(request: Request) {
     try {
         const transaction: Transaction = await request.json();
-        const { id, ...dataToUpdate } = transaction; 
+        const id = transaction.id; 
+        
         if (!id) {
              return NextResponse.json({ success: false, error: 'Transaction ID is required' }, { status: 400 });
         }
-        const db = await getDb();
 
+        const db = await getDb();
+        
+        const dataToUpdate = { ...transaction };
         // @ts-ignore
         delete dataToUpdate._id;
+        // @ts-ignore
+        delete dataToUpdate.id;
 
         const result = await db.collection('transactions').updateOne(
             { _id: new ObjectId(id as string) },

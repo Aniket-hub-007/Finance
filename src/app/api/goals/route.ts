@@ -41,13 +41,18 @@ export async function POST(request: Request) {
 export async function PUT(request: Request) {
     try {
         const goal: SavingsGoal = await request.json();
-        const { id, ...dataToUpdate } = goal;
+        const id = goal.id;
         if (!id) {
              return NextResponse.json({ success: false, error: 'Goal ID is required' }, { status: 400 });
         }
         const collection = await getCollection();
+        
+        const dataToUpdate = { ...goal };
         // @ts-ignore
         delete dataToUpdate._id;
+        // @ts-ignore
+        delete dataToUpdate.id;
+
         const result = await collection.updateOne(
             { _id: new ObjectId(id) },
             { $set: dataToUpdate }

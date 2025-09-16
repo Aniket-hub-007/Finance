@@ -51,7 +51,12 @@ export async function PUT(request: Request) {
 
         const db = await getDb();
         
-        const { _id, ...dataToUpdate } = transaction;
+        const dataToUpdate = { ...transaction };
+        // @ts-ignore
+        delete dataToUpdate._id;
+        // @ts-ignore
+        delete dataToUpdate.id;
+
 
         const result = await db.collection('transactions').updateOne(
             { _id: new ObjectId(id as string) },

@@ -46,7 +46,11 @@ export async function PUT(request: Request) {
              return NextResponse.json({ success: false, error: 'Debt ID is required' }, { status: 400 });
         }
         const collection = await getCollection();
-        const { _id, ...dataToUpdate } = debt;
+        const dataToUpdate = { ...debt };
+        // @ts-ignore
+        delete dataToUpdate._id;
+        // @ts-ignore
+        delete dataToUpdate.id;
 
         const result = await collection.updateOne(
             { _id: new ObjectId(id) },

@@ -20,12 +20,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Wallet, Smartphone, Landmark, Plus, PiggyBank, CreditCard, TrendingUp, TrendingDown } from 'lucide-react';
 import { Line, LineChart, CartesianGrid, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
 import { ChartTooltipContent, ChartContainer, ChartConfig } from '@/components/ui/chart';
-import { subDays, format, startOfMonth, eachMonthOfInterval, subMonths, parseISO } from 'date-fns';
-import { useState } from 'react';
+import { subDays, format, startOfMonth, eachMonthOfInterval, subMonths, parseISO, isAfter } from 'date-fns';
+import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { BalanceEditForm } from '@/components/dashboard/balance-edit-form';
 import { useAppContext } from '@/context/app-provider';
-import type { Balance } from '@/lib/types';
+import type { Balance, Transaction } from '@/lib/types';
 
 const chartConfig = {
   balance: {
@@ -46,8 +46,38 @@ export default function DashboardPage() {
   const { balances, addBalance, transactions, savingsGoals, debts, lending } = useAppContext();
   const [isEditFormOpen, setIsEditFormOpen] = useState(false);
 
-  const latestBalance = balances.length > 0 ? balances[0] : { bank: 0, upi: 0, cash: 0, date: new Date().toISOString() };
-  const totalBalance = latestBalance.bank + latestBalance.upi + latestBalance.cash;
+  const latestBalance = useMemo(() => balances.length > 0 ? balances[0] : { bank: 0, upi: 0, cash: 0, date: new Date().toISOString() }, [balances]);
+
+  const adjustedBalances = useMemo(() => {
+    if (!latestBalance.date) {
+        return latestBalance;
+    }
+    const lastBalanceDate = parseISO(latestBalance.date);
+    const recentTransactions = transactions.filter(t => t.date && isAfter(parseISO(t.date), lastBalanceDate) && t.type === 'expense');
+
+    let adjustedBank = latestBalance.bank;
+    let adjustedUpi = latestBalance.upi;
+    let adjustedCash = latestBalance.cash;
+
+    recentTransactions.forEach(t => {
+        switch(t.paymentMethod) {
+            case 'card':
+            case 'other':
+                adjustedBank -= t.amount;
+                break;
+            case 'upi':
+                adjustedUpi -= t.amount;
+                break;
+            case 'cash':
+                adjustedCash -= t.amount;
+                break;
+        }
+    });
+
+    return { ...latestBalance, bank: adjustedBank, upi: adjustedUpi, cash: adjustedCash };
+  }, [latestBalance, transactions]);
+  
+  const totalBalance = adjustedBalances.bank + adjustedBalances.upi + adjustedBalances.cash;
   
   const totalExpenses = transactions.filter(t => t.type === 'expense').reduce((acc, t) => acc + Math.abs(t.amount), 0);
   const totalSavings = savingsGoals.reduce((acc, goal) => acc + goal.currentAmount, 0);
@@ -66,7 +96,7 @@ export default function DashboardPage() {
     const date = subDays(today, 6 - i);
     const day = format(date, 'EEE');
     const dailyExpenses = transactions
-      .filter(t => t.type === 'expense' && new Date(t.date).toDateString() === date.toDateString())
+      .filter(t => t.type === 'expense' && t.date && new Date(t.date).toDateString() === date.toDateString())
       .reduce((acc, t) => acc + Math.abs(t.amount), 0);
     const dailySavings = savingsGoals.reduce((acc, goal) => acc + (goal.currentAmount / 30), 0) / 7; // simplified
     
@@ -79,7 +109,7 @@ export default function DashboardPage() {
   const weeklyData = Array.from({ length: 4 }, (_, i) => {
     const week = `Week ${i + 1}`;
     const weeklyExpenses = transactions
-        .filter(t => new Date(t.date) > subDays(today, (4-i)*7) && new Date(t.date) <= subDays(today, (3-i)*7))
+        .filter(t => t.date && new Date(t.date) > subDays(today, (4-i)*7) && new Date(t.date) <= subDays(today, (3-i)*7))
         .reduce((acc, t) => acc + Math.abs(t.amount), 0);
     const weeklySavings = savingsGoals.reduce((acc, goal) => acc + (goal.currentAmount / 4), 0); // simplified
     const balance = totalBalance - (weeklyExpenses * (4-i)); // simplified
@@ -94,7 +124,7 @@ export default function DashboardPage() {
   const monthlyData = last4Months.map(month => {
     const monthName = format(month, 'MMM');
     const monthlyExpenses = transactions
-      .filter(t => t.type === 'expense' && format(new Date(t.date), 'yyyy-MM') === format(month, 'yyyy-MM'))
+      .filter(t => t.type === 'expense' && t.date && format(parseISO(t.date), 'yyyy-MM') === format(month, 'yyyy-MM'))
       .reduce((acc, t) => acc + Math.abs(t.amount), 0);
     
     const monthlySavings = savingsGoals.reduce((acc, goal) => acc + (goal.currentAmount / 4), 0); 
@@ -160,7 +190,7 @@ export default function DashboardPage() {
             <Landmark className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">₹{latestBalance.bank.toLocaleString()}</div>
+            <div className="text-2xl font-bold">₹{adjustedBalances.bank.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">In your bank accounts</p>
           </CardContent>
         </Card>
@@ -170,7 +200,7 @@ export default function DashboardPage() {
             <Smartphone className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">₹{latestBalance.upi.toLocaleString()}</div>
+            <div className="text-2xl font-bold">₹{adjustedBalances.upi.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">In your UPI apps</p>
           </CardContent>
         </Card>
@@ -180,7 +210,7 @@ export default function DashboardPage() {
             <Wallet className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">₹{latestBalance.cash.toLocaleString()}</div>
+            <div className="text-2xl font-bold">₹{adjustedBalances.cash.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">Physical cash</p>
           </CardContent>
         </Card>
@@ -330,7 +360,4 @@ export default function DashboardPage() {
       />
     </>
   );
-
-    
-
-    
+}

@@ -70,7 +70,7 @@ export default function DashboardPage() {
       .reduce((acc, t) => acc + Math.abs(t.amount), 0);
     const dailySavings = savingsGoals.reduce((acc, goal) => acc + (goal.currentAmount / 30), 0) / 7; // simplified
     
-    const balanceOnDate = balances.find(b => format(parseISO(b.date), 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd'));
+    const balanceOnDate = balances.find(b => b.date && format(parseISO(b.date), 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd'));
     const balance = balanceOnDate ? balanceOnDate.bank + balanceOnDate.upi + balanceOnDate.cash : 0;
     
     return { name: day, expense: dailyExpenses, savings: dailySavings, balance };
@@ -99,7 +99,7 @@ export default function DashboardPage() {
     
     const monthlySavings = savingsGoals.reduce((acc, goal) => acc + (goal.currentAmount / 4), 0); 
 
-    const balanceEntryForMonth = balances.find(b => format(parseISO(b.date), 'yyyy-MM') === format(month, 'yyyy-MM'));
+    const balanceEntryForMonth = balances.find(b => b.date && format(parseISO(b.date), 'yyyy-MM') === format(month, 'yyyy-MM'));
     const balance = balanceEntryForMonth ? balanceEntryForMonth.bank + balanceEntryForMonth.upi + balanceEntryForMonth.cash : 0;
 
     return { name: monthName, expense: monthlyExpenses, savings: monthlySavings, balance: balance };
@@ -280,7 +280,7 @@ export default function DashboardPage() {
                     <TableRow key={tx.id}>
                       <TableCell>
                         <div className="font-medium">{tx.description}</div>
-                        <div className="text-xs text-muted-foreground">{format(parseISO(tx.date), 'PPP')}</div>
+                        <div className="text-xs text-muted-foreground">{tx.date ? format(parseISO(tx.date), 'PPP') : ''}</div>
                       </TableCell>
                       <TableCell className={`text-right font-medium ${tx.type === 'income' ? 'text-accent' : 'text-destructive'}`}>
                         {tx.type === 'income' ? '+' : '-'}₹{Math.abs(tx.amount).toFixed(2)}
@@ -330,5 +330,7 @@ export default function DashboardPage() {
       />
     </>
   );
+
+    
 
     

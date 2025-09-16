@@ -26,6 +26,8 @@ import { Button } from '@/components/ui/button';
 import { BalanceEditForm } from '@/components/dashboard/balance-edit-form';
 import { useAppContext } from '@/context/app-provider';
 import type { Balance, Transaction } from '@/lib/types';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
 
 const chartConfig = {
   balance: {
@@ -45,8 +47,18 @@ const chartConfig = {
 export default function DashboardPage() {
   const { balances, addBalance, transactions, savingsGoals, debts, lending } = useAppContext();
   const [isEditFormOpen, setIsEditFormOpen] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [selectedPaymentMode, setSelectedPaymentMode] = useState('all');
 
   const latestBalance = useMemo(() => balances.length > 0 ? balances[0] : { bank: 0, upi: 0, cash: 0, date: new Date().toISOString() }, [balances]);
+
+  const filteredTransactions = useMemo(() => {
+    return transactions.filter(t => {
+      const categoryMatch = selectedCategory === 'all' || t.category === selectedCategory;
+      const paymentModeMatch = selectedPaymentMode === 'all' || t.paymentMethod === selectedPaymentMode;
+      return categoryMatch && paymentModeMatch;
+    });
+  }, [transactions, selectedCategory, selectedPaymentMode]);
 
   const adjustedBalances = useMemo(() => {
     if (!latestBalance.date) {
@@ -79,14 +91,25 @@ export default function DashboardPage() {
   
   const totalBalance = adjustedBalances.bank + adjustedBalances.upi + adjustedBalances.cash;
   
-  const totalExpenses = transactions.filter(t => t.type === 'expense').reduce((acc, t) => acc + Math.abs(t.amount), 0);
+  const totalExpenses = filteredTransactions.filter(t => t.type === 'expense').reduce((acc, t) => acc + Math.abs(t.amount), 0);
   const totalSavings = savingsGoals.reduce((acc, goal) => acc + goal.currentAmount, 0);
   const totalDebts = debts.reduce((acc, debt) => acc + debt.currentBalance, 0);
   const totalLent = lending.filter(l => l.status === 'Pending').reduce((acc, l) => acc + l.amount, 0);
 
+  const expenseCategories = useMemo(() => {
+    const categories = new Set(transactions.filter(t => t.type === 'expense').map(t => t.category));
+    return ['all', ...Array.from(categories)];
+  }, [transactions]);
+  
+  const paymentMethods = useMemo(() => {
+    const methods = new Set(transactions.map(t => t.paymentMethod));
+    return ['all', ...Array.from(methods)];
+  }, [transactions]);
+
+
   const expensesByCategory = useMemo(() => {
     const categoryMap: { [key: string]: number } = {};
-    transactions
+    filteredTransactions
       .filter(t => t.type === 'expense')
       .forEach(t => {
         if (!categoryMap[t.category]) {
@@ -99,7 +122,7 @@ export default function DashboardPage() {
       category,
       amount,
     }));
-  }, [transactions]);
+  }, [filteredTransactions]);
 
   const categoryChartConfig = useMemo(() => {
     const config: ChartConfig = {};
@@ -123,7 +146,7 @@ export default function DashboardPage() {
   const dailyData = Array.from({ length: 7 }, (_, i) => {
     const date = subDays(today, 6 - i);
     const day = format(date, 'EEE');
-    const dailyExpenses = transactions
+    const dailyExpenses = filteredTransactions
       .filter(t => t.type === 'expense' && t.date && new Date(t.date).toDateString() === date.toDateString())
       .reduce((acc, t) => acc + Math.abs(t.amount), 0);
     const dailySavings = savingsGoals.reduce((acc, goal) => acc + (goal.currentAmount / 30), 0) / 7; // simplified
@@ -136,7 +159,7 @@ export default function DashboardPage() {
 
   const weeklyData = Array.from({ length: 4 }, (_, i) => {
     const week = `Week ${i + 1}`;
-    const weeklyExpenses = transactions
+    const weeklyExpenses = filteredTransactions
         .filter(t => t.date && new Date(t.date) > subDays(today, (4-i)*7) && new Date(t.date) <= subDays(today, (3-i)*7))
         .reduce((acc, t) => acc + Math.abs(t.amount), 0);
     const weeklySavings = savingsGoals.reduce((acc, goal) => acc + (goal.currentAmount / 4), 0); // simplified
@@ -151,7 +174,7 @@ export default function DashboardPage() {
 
   const monthlyData = last4Months.map(month => {
     const monthName = format(month, 'MMM');
-    const monthlyExpenses = transactions
+    const monthlyExpenses = filteredTransactions
       .filter(t => t.type === 'expense' && t.date && format(parseISO(t.date), 'yyyy-MM') === format(month, 'yyyy-MM'))
       .reduce((acc, t) => acc + Math.abs(t.amount), 0);
     
@@ -252,7 +275,9 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-destructive">₹{totalExpenses.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground">This month</p>
+            <p className="text-xs text-muted-foreground">
+              {selectedCategory !== 'all' ? `in ${selectedCategory}` : 'This month'}
+            </p>
           </CardContent>
         </Card>
         <Card>
@@ -286,6 +311,43 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+
+       <Card className="mt-8">
+        <CardHeader>
+          <CardTitle>Filters</CardTitle>
+          <CardDescription>Filter expenses by category and payment method.</CardDescription>
+        </CardHeader>
+        <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="category-filter">Category</Label>
+                <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                  <SelectTrigger id="category-filter">
+                    <SelectValue placeholder="Select a category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {expenseCategories.map(cat => (
+                      <SelectItem key={cat} value={cat} className="capitalize">{cat}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="payment-mode-filter">Payment Mode</Label>
+                <Select value={selectedPaymentMode} onValueChange={setSelectedPaymentMode}>
+                  <SelectTrigger id="payment-mode-filter">
+                    <SelectValue placeholder="Select a payment mode" />
+                  </SelectTrigger>
+                  <SelectContent>
+                     {paymentMethods.map(method => (
+                      <SelectItem key={method} value={method} className="capitalize">{method}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+        </CardContent>
+      </Card>
       
        <Tabs defaultValue="monthly" className="w-full mt-8">
             <TabsList className="grid w-full grid-cols-3 md:w-[400px]">
@@ -330,16 +392,18 @@ export default function DashboardPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Description</TableHead>
+                    <TableHead>Category</TableHead>
                     <TableHead className="text-right">Amount</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {transactions.slice(0, 5).map((tx) => (
+                  {filteredTransactions.slice(0, 5).map((tx) => (
                     <TableRow key={tx.id}>
                       <TableCell>
                         <div className="font-medium">{tx.description}</div>
                         <div className="text-xs text-muted-foreground">{tx.date ? format(parseISO(tx.date), 'PPP') : ''}</div>
                       </TableCell>
+                       <TableCell>{tx.category}</TableCell>
                       <TableCell className={`text-right font-medium ${tx.type === 'income' ? 'text-accent' : 'text-destructive'}`}>
                         {tx.type === 'income' ? '+' : '-'}₹{Math.abs(tx.amount).toFixed(2)}
                       </TableCell>
@@ -410,5 +474,4 @@ export default function DashboardPage() {
       />
     </>
   );
-
-    
+}

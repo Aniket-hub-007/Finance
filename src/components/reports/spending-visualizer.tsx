@@ -5,9 +5,9 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { getChartSuggestion } from '@/app/reports/actions';
 import type { VisualizeSpendingViaChartsOutput } from '@/ai/flows/visualize-spending-via-charts';
-import { Loader2, BarChart as BarChartIcon, PieChart, LineChart as LineChartIcon } from 'lucide-react';
+import { Loader2, BarChart as BarChartIcon } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ResponsiveContainer, Bar, XAxis, YAxis, Tooltip, Pie, Cell, Line, BarChart, LineChart } from 'recharts';
+import { ResponsiveContainer, Bar, XAxis, YAxis, Pie, Cell, Line, BarChart, LineChart, PieChart } from 'recharts';
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig } from '@/components/ui/chart';
 import { toast } from '@/hooks/use-toast';
 
@@ -101,16 +101,16 @@ export function SpendingVisualizer() {
     if (chartType.includes('line')) {
       return (
          <ChartContainer config={chartConfig} className="min-h-[200px] w-full">
-          <ResponsiveContainer width="100%" height={350}>
-            <LineChart data={chartData}>
-              <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
-              <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `₹${value}`} />
-              <ChartTooltip content={<ChartTooltipContent />} />
-              <Line type="monotone" dataKey="groceries" stroke="var(--color-groceries)" />
-              <Line type="monotone" dataKey="transport" stroke="var(--color-transport)" />
-              <Line type="monotone" dataKey="entertainment" stroke="var(--color-entertainment)" />
-            </LineChart>
-          </ResponsiveContainer>
+            <ResponsiveContainer width="100%" height={350}>
+                <LineChart data={chartData}>
+                    <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
+                    <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `₹${value}`} />
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <Line type="monotone" dataKey="groceries" stroke="var(--color-groceries)" />
+                    <Line type="monotone" dataKey="transport" stroke="var(--color-transport)" />
+                    <Line type="monotone" dataKey="entertainment" stroke="var(--color-entertainment)" />
+                </LineChart>
+            </ResponsiveContainer>
         </ChartContainer>
       );
     }

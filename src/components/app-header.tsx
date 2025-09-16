@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -9,15 +10,8 @@ import {
 } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import {
-  ArrowRightLeft,
-  Calculator,
-  CreditCard,
   Flame,
-  Landmark,
-  LayoutDashboard,
   Menu,
-  PiggyBank,
-  TrendingUp,
   User,
 } from 'lucide-react';
 import {

@@ -3,6 +3,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
 import { PlusCircle, FileText, Loader2 } from "lucide-react";
 import { useState } from "react";
 import type { Budget } from "@/lib/types";
@@ -15,7 +16,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { useAppContext } from "@/context/app-provider";
 
@@ -100,7 +100,7 @@ export default function BudgetPage() {
                                                 {remaining >= 0 ? `₹${remaining.toLocaleString()} under` : `₹${Math.abs(remaining).toLocaleString()} over`}
                                             </p>
                                         </div>
-                                        <Progress value={Math.min(progress, 100)} />
+                                        <Progress value={progress} />
                                     </div>
                                     <Table>
                                         <TableHeader>

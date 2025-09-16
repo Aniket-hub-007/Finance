@@ -18,9 +18,9 @@ import {
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Wallet, Smartphone, Landmark, Pencil, PiggyBank, CreditCard, TrendingUp, TrendingDown } from 'lucide-react';
-import { Line, LineChart, CartesianGrid, XAxis, YAxis, Tooltip as RechartsTooltip } from 'recharts';
+import { Line, LineChart, CartesianGrid, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
 import { ChartTooltipContent, ChartContainer, ChartConfig } from '@/components/ui/chart';
-import { subDays, format } from 'date-fns';
+import { subDays, format, startOfMonth, eachMonthOfInterval, subMonths } from 'date-fns';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { BalanceEditForm } from '@/components/dashboard/balance-edit-form';
@@ -79,12 +79,24 @@ export default function DashboardPage() {
     return { name: week, expense: weeklyExpenses, savings: weeklySavings, balance: totalBalance - (weeklyExpenses * (4-i)) };
   });
 
-  const monthlyData = [
-    { name: 'Apr', expense: 2400, savings: 500, balance: 10000 },
-    { name: 'May', expense: 1398, savings: 550, balance: 12000 },
-    { name: 'Jun', expense: 3800, savings: 600, balance: 9000 },
-    { name: 'Jul', expense: 2908, savings: 650, balance: 15000 },
-  ];
+  const last4Months = eachMonthOfInterval({
+    start: subMonths(startOfMonth(today), 3),
+    end: startOfMonth(today)
+  });
+
+  const monthlyData = last4Months.map(month => {
+    const monthName = format(month, 'MMM');
+    const monthlyExpenses = transactions
+      .filter(t => t.type === 'expense' && format(new Date(t.date), 'yyyy-MM') === format(month, 'yyyy-MM'))
+      .reduce((acc, t) => acc + Math.abs(t.amount), 0);
+    
+    // Simplified savings and balance for demonstration
+    const monthlySavings = savingsGoals.reduce((acc, goal) => acc + (goal.currentAmount / 4), 0); 
+    const monthIndex = last4Months.length - last4Months.indexOf(month) - 1;
+    const balance = totalBalance - (monthlyExpenses * (monthIndex + 1));
+
+    return { name: monthName, expense: monthlyExpenses, savings: monthlySavings, balance: balance };
+  });
   
   const renderChart = (data: any[], key: string, color: string, title: string) => (
      <Card>
@@ -93,6 +105,7 @@ export default function DashboardPage() {
         </CardHeader>
         <CardContent>
             <ChartContainer config={chartConfig} className="min-h-[200px] w-full">
+              <ResponsiveContainer width="100%" height={200}>
                 <LineChart data={data} accessibilityLayer>
                      <CartesianGrid vertical={false} />
                      <XAxis
@@ -113,6 +126,7 @@ export default function DashboardPage() {
                     />
                     <Line type="monotone" dataKey={key} stroke={color} fill={color} strokeWidth={2} dot={{r: 4}} name={key} />
                 </LineChart>
+              </ResponsiveContainer>
             </ChartContainer>
         </CardContent>
      </Card>

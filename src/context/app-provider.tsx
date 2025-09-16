@@ -1,9 +1,42 @@
 
 'use client';
 
-import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import React, { createContext, useContext, useState, ReactNode } from 'react';
 import type { Transaction, Balances, SavingsGoal, Debt, Lending, Budget } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
+
+// Mock Data
+const initialMockTransactions: Transaction[] = [
+  { id: '1', _id: '1', description: 'Groceries', amount: 75.5, date: '2024-07-28', category: 'Food', type: 'expense', paymentMethod: 'card' },
+  { id: '2', _id: '2', description: 'Salary', amount: 2500, date: '2024-07-27', category: 'Income', type: 'income', paymentMethod: 'other' },
+  { id: '3', _id: '3', description: 'Dinner with friends', amount: 120, date: '2024-07-26', category: 'Social', type: 'expense', paymentMethod: 'upi' },
+  { id: '4', _id: '4', description: 'Movie tickets', amount: 35, date: '2024-07-25', category: 'Entertainment', type: 'expense', paymentMethod: 'cash' },
+];
+
+const initialMockBalances: Balances = {
+  bank: 12050.75,
+  upi: 2500.50,
+  cash: 850.00,
+};
+
+const initialMockGoals: SavingsGoal[] = [
+  { id: '1', _id: '1', name: 'New Laptop', currentAmount: 800, targetAmount: 1500, deadline: '2024-12-31' },
+  { id: '2', _id: '2', name: 'Vacation', currentAmount: 300, targetAmount: 2000, deadline: '2025-06-30' },
+];
+
+const initialMockDebts: Debt[] = [
+  { id: '1', _id: '1', name: 'Credit Card', initialAmount: 5000, currentBalance: 2500, interestRate: 18.5 },
+  { id: '2', _id: '2', name: 'Student Loan', initialAmount: 20000, currentBalance: 15000, interestRate: 5.8 },
+];
+
+const initialMockLending: Lending[] = [
+    { id: '1', _id: '1', borrower: 'John Doe', amount: 500, status: 'Pending', date: '2024-07-20' }
+];
+
+const initialMockBudgets: Budget[] = [
+    { id: '1', _id: '1', name: 'Monthly Groceries', amount: 400, expenses: [ { category: 'Groceries', amount: 250 }, { category: 'Snacks', amount: 50 } ]}
+];
+
 
 interface AppContextType {
   transactions: Transaction[];
@@ -38,99 +71,21 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-const initialBalances: Balances = {
-  bank: 0,
-  upi: 0,
-  cash: 0,
-};
-
 export const AppProvider = ({ children }: { children: ReactNode }) => {
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [balances, setBalances] = useState<Balances>(initialBalances);
-  const [savingsGoals, setSavingsGoals] = useState<SavingsGoal[]>([]);
-  const [debts, setDebts] = useState<Debt[]>([]);
-  const [lending, setLending] = useState<Lending[]>([]);
-  const [budgets, setBudgets] = useState<Budget[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [transactions, setTransactions] = useState<Transaction[]>(initialMockTransactions);
+  const [balances, setBalances] = useState<Balances>(initialMockBalances);
+  const [savingsGoals, setSavingsGoals] = useState<SavingsGoal[]>(initialMockGoals);
+  const [debts, setDebts] = useState<Debt[]>(initialMockDebts);
+  const [lending, setLending] = useState<Lending[]>(initialMockLending);
+  const [budgets, setBudgets] = useState<Budget[]>(initialMockBudgets);
+  const [isLoading, setIsLoading] = useState(false); // No need for loading state with mock data
   const { toast } = useToast();
 
-  const fetchData = async () => {
-    setIsLoading(true);
-    try {
-      const [transactionsRes, goalsRes, debtsRes, lendingRes, budgetsRes, balancesRes] = await Promise.all([
-        fetch('/api/transactions'),
-        fetch('/api/goals'),
-        fetch('/api/debts'),
-        fetch('/api/lending'),
-        fetch('/api/budgets'),
-        fetch('/api/balances'),
-      ])
-
-      const transactionsData = await transactionsRes.json();
-      if (transactionsData.success) {
-        setTransactions(transactionsData.data.sort((a: Transaction, b: Transaction) => new Date(b.date).getTime() - new Date(a.date).getTime()));
-      }
-      
-      const goalsData = await goalsRes.json();
-      if (goalsData.success) setSavingsGoals(goalsData.data);
-
-      const debtsData = await debtsRes.json();
-      if (debtsData.success) setDebts(debtsData.data);
-      
-      const lendingData = await lendingRes.json();
-      if (lendingData.success) setLending(lendingData.data);
-
-      const budgetsData = await budgetsRes.json();
-      if (budgetsData.success) setBudgets(budgetsData.data);
-
-      const balancesData = await balancesRes.json();
-      if (balancesData.success) setBalances(balancesData.data);
-
-    } catch (error) {
-      console.error("Error fetching initial data:", error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to load your financial data. Please try refreshing.",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const handleApiCall = async <T, U>(endpoint: string, method: 'POST' | 'PUT' | 'DELETE', body: T): Promise<U | null> => {
-    try {
-      const response = await fetch(endpoint, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-      const result = await response.json();
-      if (result.success) {
-        return result.data as U;
-      } else {
-        console.error(`Failed to ${method} ${endpoint}:`, result.error);
-        toast({ variant: 'destructive', title: "API Error", description: result.error});
-        return null;
-      }
-    } catch (error) {
-      console.error(`Error in ${method} ${endpoint}:`, error);
-      toast({ variant: 'destructive', title: "Network Error", description: `An error occurred while trying to ${method} data.`});
-      return null;
-    }
-  }
-
   const updateBalances = async (newBalances: Balances) => {
-    const updatedBalances = await handleApiCall<Balances, Balances>('/api/balances', 'PUT', newBalances);
-    if(updatedBalances) {
-        setBalances(updatedBalances);
-    }
-  }
-
+    setBalances(newBalances);
+    toast({ title: "Success", description: "Balances updated." });
+  };
+  
   const adjustBalance = async (transaction: Pick<Transaction, 'amount' | 'type' | 'paymentMethod'>, factor: 1 | -1) => {
       let amount = transaction.amount;
       if (transaction.type === 'expense') {
@@ -138,108 +93,111 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       }
       
       const change = amount * factor;
-      const newBalances = { ...balances };
-
-      switch (transaction.paymentMethod) {
-          case 'card':
-          case 'other':
-              newBalances.bank += change;
-              break;
-          case 'upi':
-              newBalances.upi += change;
-              break;
-          case 'cash':
-              newBalances.cash += change;
-              break;
-      }
-      await updateBalances(newBalances);
+      setBalances(prevBalances => {
+        const newBalances = { ...prevBalances };
+        switch (transaction.paymentMethod) {
+            case 'card':
+            case 'other':
+                newBalances.bank += change;
+                break;
+            case 'upi':
+                newBalances.upi += change;
+                break;
+            case 'cash':
+                newBalances.cash += change;
+                break;
+        }
+        return newBalances;
+      });
   }
-
 
   // Transactions
   const addTransaction = async (transaction: Omit<Transaction, 'id' | '_id'>) => {
-    const newTransaction = await handleApiCall<Omit<Transaction, 'id' | '_id'>, Transaction>('/api/transactions', 'POST', transaction);
-    if (newTransaction) {
-      setTransactions(prev => [newTransaction, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
-      await adjustBalance(transaction, 1);
-    }
+    const newId = (transactions.length + 1).toString();
+    const newTransaction = { ...transaction, id: newId, _id: newId };
+    setTransactions(prev => [newTransaction, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+    await adjustBalance(transaction, 1);
+    toast({ title: "Success", description: "Transaction added." });
   };
   const updateTransaction = async (updatedTransaction: Transaction) => {
     const originalTransaction = transactions.find(t => t.id === updatedTransaction.id);
     if(!originalTransaction) return;
 
-    const result = await handleApiCall<Transaction, Transaction>('/api/transactions', 'PUT', updatedTransaction);
-    if (result) {
-      // Revert old transaction amount
-      await adjustBalance(originalTransaction, -1);
-      // Apply new transaction amount
-      await adjustBalance(updatedTransaction, 1);
+    // Revert old transaction amount
+    await adjustBalance(originalTransaction, -1);
+    // Apply new transaction amount
+    await adjustBalance(updatedTransaction, 1);
 
-      setTransactions(prev => prev.map(t => (t.id === result.id ? result : t)));
-    }
+    setTransactions(prev => prev.map(t => (t.id === updatedTransaction.id ? updatedTransaction : t)));
+    toast({ title: "Success", description: "Transaction updated." });
   };
   const deleteTransaction = async (transactionToDelete: Transaction) => {
-    const result = await handleApiCall<{ id: string | number }, any>('/api/transactions', 'DELETE', { id: transactionToDelete.id });
-    if (result) {
-      setTransactions(prev => prev.filter(t => t.id !== transactionToDelete.id));
-      await adjustBalance(transactionToDelete, -1);
-    }
+    setTransactions(prev => prev.filter(t => t.id !== transactionToDelete.id));
+    await adjustBalance(transactionToDelete, -1);
+    toast({ title: "Success", description: "Transaction deleted." });
   };
 
   // Goals
   const addGoal = async (goal: Omit<SavingsGoal, 'id' | '_id'>) => {
-    const newGoal = await handleApiCall<Omit<SavingsGoal, 'id' | '_id'>, SavingsGoal>('/api/goals', 'POST', goal);
-    if (newGoal) setSavingsGoals(prev => [newGoal, ...prev]);
+    const newId = (savingsGoals.length + 1).toString();
+    const newGoal = { ...goal, id: newId, _id: newId };
+    setSavingsGoals(prev => [newGoal, ...prev]);
+    toast({ title: "Success", description: "Goal added." });
   };
   const updateGoal = async (updatedGoal: SavingsGoal) => {
-    const result = await handleApiCall<SavingsGoal, SavingsGoal>('/api/goals', 'PUT', updatedGoal);
-    if (result) setSavingsGoals(prev => prev.map(g => (g.id === result.id ? result : g)));
+    setSavingsGoals(prev => prev.map(g => (g.id === updatedGoal.id ? updatedGoal : g)));
+    toast({ title: "Success", description: "Goal updated." });
   };
   const deleteGoal = async (goalToDelete: SavingsGoal) => {
-    const result = await handleApiCall<{ id: string }, any>('/api/goals', 'DELETE', { id: goalToDelete.id });
-    if (result) setSavingsGoals(prev => prev.filter(g => g.id !== goalToDelete.id));
+    setSavingsGoals(prev => prev.filter(g => g.id !== goalToDelete.id));
+     toast({ title: "Success", description: "Goal deleted." });
   };
   
   // Debts
   const addDebt = async (debt: Omit<Debt, 'id' | '_id'>) => {
-    const newDebt = await handleApiCall<Omit<Debt, 'id' | '_id'>, Debt>('/api/debts', 'POST', debt);
-    if (newDebt) setDebts(prev => [newDebt, ...prev]);
+    const newId = (debts.length + 1).toString();
+    const newDebt = { ...debt, id: newId, _id: newId };
+    setDebts(prev => [newDebt, ...prev]);
+    toast({ title: "Success", description: "Debt added." });
   };
   const updateDebt = async (updatedDebt: Debt) => {
-    const result = await handleApiCall<Debt, Debt>('/api/debts', 'PUT', updatedDebt);
-    if (result) setDebts(prev => prev.map(d => (d.id === result.id ? result : d)));
+    setDebts(prev => prev.map(d => (d.id === updatedDebt.id ? updatedDebt : d)));
+    toast({ title: "Success", description: "Debt updated." });
   };
   const deleteDebt = async (debtToDelete: Debt) => {
-    const result = await handleApiCall<{ id: string }, any>('/api/debts', 'DELETE', { id: debtToDelete.id });
-    if (result) setDebts(prev => prev.filter(d => d.id !== debtToDelete.id));
-  };
-
+    setDebts(prev => prev.filter(d => d.id !== debtToDelete.id));
+    toast({ title: "Success", description: "Debt deleted." });
+_id
   // Lending
   const addLending = async (lendingItem: Omit<Lending, 'id' | '_id'>) => {
-    const newLending = await handleApiCall<Omit<Lending, 'id' | '_id'>, Lending>('/api/lending', 'POST', lendingItem);
-    if (newLending) setLending(prev => [newLending, ...prev]);
+    const newId = (lending.length + 1).toString();
+    const newLending = { ...lendingItem, id: newId, _id: newId };
+    setLending(prev => [newLending, ...prev]);
+    toast({ title: "Success", description: "Lending entry added." });
   };
   const updateLending = async (updatedLending: Lending) => {
-    const result = await handleApiCall<Lending, Lending>('/api/lending', 'PUT', updatedLending);
-    if (result) setLending(prev => prev.map(l => (l.id === result.id ? result : l)));
+    setLending(prev => prev.map(l => (l.id === updatedLending.id ? updatedLending : l)));
+    toast({ title: "Success", description: "Lending entry updated." });
   };
   const deleteLending = async (lendingToDelete: Lending) => {
-    const result = await handleApiCall<{ id: string }, any>('/api/lending', 'DELETE', { id: lendingToDelete.id });
-    if (result) setLending(prev => prev.filter(l => l.id !== lendingToDelete.id));
+    setLending(prev => prev.filter(l => l.id !== lendingToDelete.id));
+    toast({ title: "Success", description: "Lending entry deleted." });
   };
 
   // Budgets
   const addBudget = async (budget: Omit<Budget, 'id' | '_id'>) => {
-    const newBudget = await handleApiCall<Omit<Budget, 'id' | '_id'>, Budget>('/api/budgets', 'POST', budget);
-    if (newBudget) setBudgets(prev => [newBudget, ...prev]);
+    const newId = (budgets.length + 1).toString();
+    const newBudget = { ...budget, id: newId, _id: newId };
+    setBudgets(prev => [newBudget, ...prev]);
+    toast({ title: "Success", description: "Budget added." });
   };
   const updateBudget = async (updatedBudget: Budget) => {
-    const result = await handleApiCall<Budget, Budget>('/api/budgets', 'PUT', updatedBudget);
-    if (result) setBudgets(prev => prev.map(b => (b.id === result.id ? result : b)));
+    setBudgets(prev => prev.map(b => (b.id === updatedBudget.id ? updatedBudget : b)));
+    toast({ title: "Success", description: "Budget updated." });
   };
   const deleteBudget = async (budgetToDelete: Budget) => {
-    const result = await handleApiCall<{ id: string }, any>('/api/budgets', 'DELETE', { id: budgetToDelete.id });
-    if (result) setBudgets(prev => prev.filter(b => b.id !== budgetToDelete.id));
+    setBudgets(prev => prev.filter(b => b.id !== budgetToDelete.id));
+    toast({ title: "Success", description: "Budget deleted." });
   };
 
 

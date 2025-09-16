@@ -1,7 +1,5 @@
 
 import type { LucideIcon } from "lucide-react";
-import type { ObjectId } from 'mongodb';
-
 
 export type Transaction = {
   id: string;
@@ -61,8 +59,8 @@ export type Budget = {
 };
 
 export type Balances = {
-  _id?: string | ObjectId;
   id?: string;
+  _id?: string;
   bank: number;
   upi: number;
   cash: number;

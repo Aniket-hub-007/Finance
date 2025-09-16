@@ -46,7 +46,7 @@ export default function DashboardPage() {
   const { balances, addBalance, transactions, savingsGoals, debts, lending } = useAppContext();
   const [isEditFormOpen, setIsEditFormOpen] = useState(false);
 
-  const latestBalance = balances.length > 0 ? balances[0] : { bank: 0, upi: 0, cash: 0 };
+  const latestBalance = balances.length > 0 ? balances[0] : { bank: 0, upi: 0, cash: 0, date: new Date().toISOString() };
   const totalBalance = latestBalance.bank + latestBalance.upi + latestBalance.cash;
   
   const totalExpenses = transactions.filter(t => t.type === 'expense').reduce((acc, t) => acc + Math.abs(t.amount), 0);
@@ -98,7 +98,6 @@ export default function DashboardPage() {
       .reduce((acc, t) => acc + Math.abs(t.amount), 0);
     
     const monthlySavings = savingsGoals.reduce((acc, goal) => acc + (goal.currentAmount / 4), 0); 
-    const monthIndex = last4Months.length - last4Months.indexOf(month) - 1;
 
     const balanceEntryForMonth = balances.find(b => format(parseISO(b.date), 'yyyy-MM') === format(month, 'yyyy-MM'));
     const balance = balanceEntryForMonth ? balanceEntryForMonth.bank + balanceEntryForMonth.upi + balanceEntryForMonth.cash : 0;
@@ -153,7 +152,7 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">₹{totalBalance.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground">Latest balance record</p>
+            <p className="text-xs text-muted-foreground">Latest on {latestBalance.date ? format(parseISO(latestBalance.date), 'PPP') : 'N/A'}</p>
           </CardContent>
         </Card>
         <Card>
@@ -282,7 +281,7 @@ export default function DashboardPage() {
                     <TableRow key={tx.id}>
                       <TableCell>
                         <div className="font-medium">{tx.description}</div>
-                        <div className="text-xs text-muted-foreground">{tx.date}</div>
+                        <div className="text-xs text-muted-foreground">{format(parseISO(tx.date), 'PPP')}</div>
                       </TableCell>
                       <TableCell className={`text-right font-medium ${tx.type === 'income' ? 'text-accent' : 'text-destructive'}`}>
                         {tx.type === 'income' ? '+' : '-'}₹{Math.abs(tx.amount).toFixed(2)}

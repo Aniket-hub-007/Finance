@@ -49,6 +49,7 @@ export type BudgetExpense = {
 export type Budget = {
   id: string | number;
   name: string;
+  amount: number;
   expenses: BudgetExpense[];
 };
 

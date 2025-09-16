@@ -27,6 +27,7 @@ export function BudgetForm({ isOpen, onClose, onSubmit, budget }: BudgetFormProp
   const { register, control, handleSubmit, reset } = useForm<Budget>({
     defaultValues: {
       name: '',
+      amount: 0,
       expenses: [{ category: '', amount: 0 }]
     }
   });
@@ -43,6 +44,7 @@ export function BudgetForm({ isOpen, onClose, onSubmit, budget }: BudgetFormProp
         } else {
             reset({
                 name: '',
+                amount: 0,
                 expenses: [{ category: '', amount: 0 }],
             });
         }
@@ -60,6 +62,10 @@ export function BudgetForm({ isOpen, onClose, onSubmit, budget }: BudgetFormProp
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="name" className="text-right">Name</Label>
               <Input id="name" {...register('name', { required: true })} className="col-span-3" />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="amount" className="text-right">Budget Amount</Label>
+              <Input id="amount" type="number" {...register('amount', { required: true, valueAsNumber: true })} className="col-span-3" />
             </div>
 
             <div>
@@ -105,4 +111,3 @@ export function BudgetForm({ isOpen, onClose, onSubmit, budget }: BudgetFormProp
     </Dialog>
   );
 }
-

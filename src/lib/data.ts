@@ -50,7 +50,8 @@ export const debts: Debt[] = [
 export const budgets: Budget[] = [
     { 
         id: 1, 
-        name: 'Monthly Household Budget', 
+        name: 'Monthly Household Budget',
+        amount: 2500,
         expenses: [
             { category: 'Rent', amount: 1500 },
             { category: 'Groceries', amount: 500 },
@@ -59,7 +60,8 @@ export const budgets: Budget[] = [
     },
     { 
         id: 2, 
-        name: 'Vacation Fund', 
+        name: 'Vacation Fund',
+        amount: 3000,
         expenses: [
             { category: 'Flights', amount: 1200 },
             { category: 'Hotels', amount: 1000 },

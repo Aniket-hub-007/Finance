@@ -4,7 +4,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { budgets as initialBudgets } from "@/lib/data";
-import { PlusCircle, FileText, IndianRupee } from "lucide-react";
+import { PlusCircle, FileText } from "lucide-react";
 import { useState } from "react";
 import type { Budget } from "@/lib/types";
 import { BudgetForm } from "@/components/budget/budget-form";
@@ -16,6 +16,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { Progress } from "@/components/ui/progress";
+import { cn } from "@/lib/utils";
 
 export default function BudgetPage() {
     const [budgets, setBudgets] = useState<Budget[]>(initialBudgets);
@@ -60,6 +62,9 @@ export default function BudgetPage() {
             <div className="grid gap-6">
                 {budgets.map(budget => {
                     const totalExpenses = budget.expenses.reduce((acc, expense) => acc + expense.amount, 0);
+                    const remaining = budget.amount - totalExpenses;
+                    const progress = (totalExpenses / budget.amount) * 100;
+
                     return (
                         <Card key={budget.id}>
                             <CardHeader>
@@ -67,7 +72,7 @@ export default function BudgetPage() {
                                     <div>
                                         <CardTitle className="font-headline">{budget.name}</CardTitle>
                                         <CardDescription>
-                                            Total: <span className="font-bold">₹{totalExpenses.toLocaleString()}</span>
+                                            Budget: <span className="font-bold">₹{budget.amount.toLocaleString()}</span>
                                         </CardDescription>
                                     </div>
                                     <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
@@ -76,22 +81,36 @@ export default function BudgetPage() {
                                 </div>
                             </CardHeader>
                             <CardContent>
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead>Category</TableHead>
-                                            <TableHead className="text-right">Amount</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {budget.expenses.map((expense, index) => (
-                                            <TableRow key={index}>
-                                                <TableCell>{expense.category}</TableCell>
-                                                <TableCell className="text-right">₹{expense.amount.toLocaleString()}</TableCell>
+                                <div className="space-y-4">
+                                    <div className="space-y-2">
+                                        <div className="flex justify-between items-center">
+                                            <p className="text-muted-foreground">Spent: <span className="font-semibold text-foreground">₹{totalExpenses.toLocaleString()}</span></p>
+                                            <p className={cn(
+                                                "font-semibold",
+                                                remaining >= 0 ? "text-accent" : "text-destructive"
+                                            )}>
+                                                {remaining >= 0 ? `₹${remaining.toLocaleString()} under` : `₹${Math.abs(remaining).toLocaleString()} over`}
+                                            </p>
+                                        </div>
+                                        <Progress value={Math.min(progress, 100)} />
+                                    </div>
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead>Category</TableHead>
+                                                <TableHead className="text-right">Amount</TableHead>
                                             </TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {budget.expenses.map((expense, index) => (
+                                                <TableRow key={index}>
+                                                    <TableCell>{expense.category}</TableCell>
+                                                    <TableCell className="text-right">₹{expense.amount.toLocaleString()}</TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </div>
                             </CardContent>
                              <CardFooter className="flex justify-end gap-2">
                                 <Button variant="ghost" size="sm" onClick={() => handleEdit(budget)}>Edit</Button>
@@ -110,4 +129,3 @@ export default function BudgetPage() {
         </div>
     );
 }
-

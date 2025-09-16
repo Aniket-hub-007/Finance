@@ -3,6 +3,7 @@
 
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import type { Transaction, Balances, SavingsGoal, Debt, Lending, Budget } from '@/lib/types';
+import { useToast } from '@/hooks/use-toast';
 
 interface AppContextType {
   transactions: Transaction[];
@@ -51,6 +52,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [lending, setLending] = useState<Lending[]>([]);
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
 
   const fetchData = async () => {
     setIsLoading(true);
@@ -84,6 +86,11 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
     } catch (error) {
       console.error("Error fetching initial data:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to load your financial data. Please try refreshing.",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -102,13 +109,15 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       });
       const result = await response.json();
       if (result.success) {
-        return result.data;
+        return result.data as U;
       } else {
         console.error(`Failed to ${method} ${endpoint}:`, result.error);
+        toast({ variant: 'destructive', title: "API Error", description: result.error});
         return null;
       }
     } catch (error) {
       console.error(`Error in ${method} ${endpoint}:`, error);
+      toast({ variant: 'destructive', title: "Network Error", description: `An error occurred while trying to ${method} data.`});
       return null;
     }
   }
@@ -120,20 +129,25 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     }
   }
 
-  const adjustBalance = async (transaction: Omit<Transaction, 'id' | '_id'>, factor: 1 | -1) => {
-      const amount = transaction.amount * factor;
+  const adjustBalance = async (transaction: Pick<Transaction, 'amount' | 'type' | 'paymentMethod'>, factor: 1 | -1) => {
+      let amount = transaction.amount;
+      if (transaction.type === 'expense') {
+        amount = -amount;
+      }
+      
+      const change = amount * factor;
       const newBalances = { ...balances };
 
       switch (transaction.paymentMethod) {
           case 'card':
           case 'other':
-              newBalances.bank += amount;
+              newBalances.bank += change;
               break;
           case 'upi':
-              newBalances.upi += amount;
+              newBalances.upi += change;
               break;
           case 'cash':
-              newBalances.cash += amount;
+              newBalances.cash += change;
               break;
       }
       await updateBalances(newBalances);
@@ -144,9 +158,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const addTransaction = async (transaction: Omit<Transaction, 'id' | '_id'>) => {
     const newTransaction = await handleApiCall<Omit<Transaction, 'id' | '_id'>, Transaction>('/api/transactions', 'POST', transaction);
     if (newTransaction) {
-      setTransactions(prev => [newTransaction, ...prev]);
-      const factor = transaction.type === 'income' ? 1 : -1;
-      await adjustBalance(transaction, factor);
+      setTransactions(prev => [newTransaction, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+      await adjustBalance(transaction, 1);
     }
   };
   const updateTransaction = async (updatedTransaction: Transaction) => {
@@ -156,11 +169,9 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     const result = await handleApiCall<Transaction, Transaction>('/api/transactions', 'PUT', updatedTransaction);
     if (result) {
       // Revert old transaction amount
-      const oldFactor = originalTransaction.type === 'income' ? -1 : 1;
-      await adjustBalance(originalTransaction, oldFactor);
+      await adjustBalance(originalTransaction, -1);
       // Apply new transaction amount
-      const newFactor = updatedTransaction.type === 'income' ? 1 : -1;
-      await adjustBalance(updatedTransaction, newFactor);
+      await adjustBalance(updatedTransaction, 1);
 
       setTransactions(prev => prev.map(t => (t.id === result.id ? result : t)));
     }
@@ -169,8 +180,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     const result = await handleApiCall<{ id: string | number }, any>('/api/transactions', 'DELETE', { id: transactionToDelete.id });
     if (result) {
       setTransactions(prev => prev.filter(t => t.id !== transactionToDelete.id));
-      const factor = transactionToDelete.type === 'income' ? -1 : 1;
-      await adjustBalance(transactionToDelete, factor);
+      await adjustBalance(transactionToDelete, -1);
     }
   };
 

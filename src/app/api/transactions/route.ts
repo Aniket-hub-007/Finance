@@ -17,7 +17,7 @@ export async function GET() {
     const sanitizedTransactions = transactions.map(tx => ({
         ...tx,
         id: tx._id.toString(),
-        _id: tx._id.toString(),
+        _id: tx._id.toString(), // Also ensure _id is a string for consistency
     }));
     return NextResponse.json({ success: true, data: sanitizedTransactions });
   } catch (error) {
@@ -42,20 +42,21 @@ export async function POST(request: Request) {
 export async function PUT(request: Request) {
     try {
         const transaction: Transaction = await request.json();
-        const { id, ...dataToUpdate } = transaction; // Exclude id from dataToUpdate
+        const { id, _id, ...dataToUpdate } = transaction; // Exclude id and _id from dataToUpdate
         if (!id) {
              return NextResponse.json({ success: false, error: 'Transaction ID is required' }, { status: 400 });
         }
         const db = await getDb();
-        // @ts-ignore
-        delete dataToUpdate._id; // remove _id before sending to mongo
+
         const result = await db.collection('transactions').updateOne(
             { _id: new ObjectId(id as string) },
             { $set: dataToUpdate }
         );
+
         if (result.matchedCount === 0) {
             return NextResponse.json({ success: false, error: 'Transaction not found' }, { status: 404 });
         }
+
         const updatedTransaction = { ...dataToUpdate, id: id, _id: id };
         return NextResponse.json({ success: true, data: updatedTransaction });
     } catch (error) {
@@ -81,4 +82,3 @@ export async function DELETE(request: Request) {
         return NextResponse.json({ success: false, error: 'Failed to delete transaction' }, { status: 500 });
     }
 }
-

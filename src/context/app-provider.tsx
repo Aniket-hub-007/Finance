@@ -25,17 +25,45 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
+// Define base balances that are not affected by transactions history for demo purposes
+const baseBalances: Balances = {
+  bank: 12050.75,
+  upi: 2500.50,
+  cash: 850.00,
+};
+
 export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [balances, setBalances] = useState<Balances>({
-    bank: 12050.75,
-    upi: 2500.50,
-    cash: 850.00,
-  });
+  const [balances, setBalances] = useState<Balances>(baseBalances);
   const [savingsGoals, setSavingsGoals] = useState<SavingsGoal[]>(initialSavingsGoals);
   const [debts, setDebts] = useState<Debt[]>(initialDebts);
   const [lending, setLending] = useState<Lending[]>(initialLending);
   const [isLoading, setIsLoading] = useState(true);
+
+  const recalculateBalances = (allTransactions: Transaction[]) => {
+    const adjustments = allTransactions.reduce((acc, t) => {
+        const amount = t.type === 'income' ? t.amount : -t.amount;
+        switch (t.paymentMethod) {
+            case 'card':
+            case 'other':
+                acc.bank += amount;
+                break;
+            case 'upi':
+                acc.upi += amount;
+                break;
+            case 'cash':
+                acc.cash += amount;
+                break;
+        }
+        return acc;
+    }, { bank: 0, upi: 0, cash: 0 });
+
+    setBalances({
+        bank: baseBalances.bank + adjustments.bank,
+        upi: baseBalances.upi + adjustments.upi,
+        cash: baseBalances.cash + adjustments.cash,
+    });
+  };
 
   useEffect(() => {
     const fetchTransactions = async () => {
@@ -58,35 +86,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     };
     fetchTransactions();
   }, []);
-
-  const recalculateBalances = (allTransactions: Transaction[]) => {
-    const initialBalances: Balances = { bank: 0, upi: 0, cash: 0 };
-    const newBalances = allTransactions.reduce((acc, t) => {
-        const amount = t.type === 'income' ? t.amount : -t.amount;
-        switch (t.paymentMethod) {
-            case 'card':
-            case 'other':
-                acc.bank += amount;
-                break;
-            case 'upi':
-                acc.upi += amount;
-                break;
-            case 'cash':
-                acc.cash += amount;
-                break;
-        }
-        return acc;
-    }, initialBalances);
-
-    // This is a placeholder for fetching initial balances, if you want them to be editable and persistent
-    const baseBalances = { bank: 12050.75, upi: 2500.50, cash: 850.00 };
-
-    setBalances({
-        bank: baseBalances.bank + newBalances.bank,
-        upi: baseBalances.upi + newBalances.upi,
-        cash: baseBalances.cash + newBalances.cash,
-    });
-  };
 
   const addTransaction = async (transaction: Omit<Transaction, 'id' | '_id'>) => {
     try {

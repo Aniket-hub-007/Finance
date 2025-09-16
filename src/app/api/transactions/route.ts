@@ -42,11 +42,14 @@ export async function POST(request: Request) {
 export async function PUT(request: Request) {
     try {
         const transaction: Transaction = await request.json();
-        const { id, _id, ...dataToUpdate } = transaction; // Exclude id and _id from dataToUpdate
+        const { id, ...dataToUpdate } = transaction; // Exclude id from dataToUpdate
         if (!id) {
              return NextResponse.json({ success: false, error: 'Transaction ID is required' }, { status: 400 });
         }
         const db = await getDb();
+
+        // @ts-ignore - We are intentionally removing _id from the update payload
+        delete dataToUpdate._id;
 
         const result = await db.collection('transactions').updateOne(
             { _id: new ObjectId(id as string) },

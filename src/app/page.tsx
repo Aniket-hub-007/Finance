@@ -20,7 +20,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Wallet, Smartphone, Landmark, Plus, PiggyBank, CreditCard, TrendingUp, TrendingDown } from 'lucide-react';
 import { Line, LineChart, CartesianGrid, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, Pie, PieChart, Cell } from 'recharts';
 import { ChartTooltipContent, ChartContainer, ChartConfig, ChartLegend, ChartLegendContent } from '@/components/ui/chart';
-import { subDays, format, startOfMonth, eachMonthOfInterval, subMonths, parseISO, isAfter } from 'date-fns';
+import { subDays, format, startOfMonth, eachMonthOfInterval, subMonths, parseISO, isAfter, startOfWeek, eachWeekOfInterval, endOfMonth } from 'date-fns';
 import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { BalanceEditForm } from '@/components/dashboard/balance-edit-form';
@@ -47,6 +47,8 @@ const chartConfig = {
 export default function DashboardPage() {
   const { balances, addBalance, transactions, savingsGoals, debts, lending } = useAppContext();
   const [isEditFormOpen, setIsEditFormOpen] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [selectedPaymentMode, setSelectedPaymentMode] = useState('all');
   
   const latestBalance = useMemo(() => balances.length > 0 ? balances[0] : { bank: 0, upi: 0, cash: 0, date: new Date().toISOString() }, [balances]);
 
@@ -80,16 +82,33 @@ export default function DashboardPage() {
   }, [latestBalance, transactions]);
   
   const totalBalance = adjustedBalances.bank + adjustedBalances.upi + adjustedBalances.cash;
-  
-  const totalExpenses = transactions.filter(t => t.type === 'expense').reduce((acc, t) => acc + Math.abs(t.amount), 0);
+
+  const filteredTransactions = useMemo(() => {
+    return transactions.filter(t => {
+      const categoryMatch = selectedCategory === 'all' || t.category.toLowerCase() === selectedCategory.toLowerCase();
+      const paymentModeMatch = selectedPaymentMode === 'all' || t.paymentMethod.toLowerCase() === selectedPaymentMode.toLowerCase();
+      return t.type === 'expense' && categoryMatch && paymentModeMatch;
+    });
+  }, [transactions, selectedCategory, selectedPaymentMode]);
+
+  const totalExpenses = filteredTransactions.reduce((acc, t) => acc + Math.abs(t.amount), 0);
   const totalSavings = savingsGoals.reduce((acc, goal) => acc + goal.currentAmount, 0);
   const totalDebts = debts.reduce((acc, debt) => acc + debt.currentBalance, 0);
   const totalLent = lending.filter(l => l.status === 'Pending').reduce((acc, l) => acc + l.amount, 0);
 
+  const expenseCategories = useMemo(() => {
+    const categories = new Set(transactions.filter(t => t.type === 'expense').map(t => t.category));
+    return ['all', ...Array.from(categories)];
+  }, [transactions]);
+  
+  const paymentMethods = useMemo(() => {
+    const methods = new Set(transactions.map(t => t.paymentMethod));
+    return ['all', ...Array.from(methods)];
+  }, [transactions]);
+
   const expensesByCategory = useMemo(() => {
     const categoryMap: { [key: string]: number } = {};
-    transactions
-      .filter(t => t.type === 'expense')
+    filteredTransactions
       .forEach(t => {
         if (!categoryMap[t.category]) {
           categoryMap[t.category] = 0;
@@ -101,7 +120,7 @@ export default function DashboardPage() {
       category,
       amount,
     }));
-  }, [transactions]);
+  }, [filteredTransactions]);
 
   const categoryChartConfig = useMemo(() => {
     const config: ChartConfig = {};
@@ -113,7 +132,6 @@ export default function DashboardPage() {
     });
     return config;
   }, [expensesByCategory]);
-
 
   const handleBalanceUpdate = async (newBalance: Omit<Balance, 'id' | '_id'>) => {
     await addBalance(newBalance);
@@ -133,17 +151,35 @@ export default function DashboardPage() {
     const balanceOnDate = balances.find(b => b.date && format(parseISO(b.date), 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd'));
     const balance = balanceOnDate ? balanceOnDate.bank + balanceOnDate.upi + balanceOnDate.cash : 0;
     
-    return { name: day, expense: dailyExpenses, savings: dailySavings, balance };
+    const categoryExpenses: {[key: string]: number} = {};
+    transactions.filter(t => t.type === 'expense' && t.date && new Date(t.date).toDateString() === date.toDateString())
+        .forEach(t => {
+            if(!categoryExpenses[t.category]) categoryExpenses[t.category] = 0;
+            categoryExpenses[t.category] += t.amount;
+        });
+
+    return { name: day, expense: dailyExpenses, savings: dailySavings, balance, ...categoryExpenses };
   });
 
   const weeklyData = Array.from({ length: 4 }, (_, i) => {
+    const weekStart = subDays(today, (3-i)*7);
+    const weekEnd = subDays(today, (4-i-1)*7 -1);
     const week = `Week ${i + 1}`;
+    
     const weeklyExpenses = transactions
-        .filter(t => t.date && new Date(t.date) > subDays(today, (4-i)*7) && new Date(t.date) <= subDays(today, (3-i)*7))
+        .filter(t => t.date && new Date(t.date) >= weekStart && new Date(t.date) <= weekEnd)
         .reduce((acc, t) => acc + Math.abs(t.amount), 0);
-    const weeklySavings = savingsGoals.reduce((acc, goal) => acc + (goal.currentAmount / 4), 0); // simplified
-    const balance = totalBalance - (weeklyExpenses * (4-i)); // simplified
-    return { name: week, expense: weeklyExpenses, savings: weeklySavings, balance: balance };
+    const weeklySavings = savingsGoals.reduce((acc, goal) => acc + (goal.currentAmount / 4), 0);
+    const balance = totalBalance - (weeklyExpenses * (4-i));
+
+    const categoryExpenses: {[key: string]: number} = {};
+    transactions.filter(t => t.date && new Date(t.date) >= weekStart && new Date(t.date) <= weekEnd)
+        .forEach(t => {
+            if(!categoryExpenses[t.category]) categoryExpenses[t.category] = 0;
+            categoryExpenses[t.category] += t.amount;
+        });
+
+    return { name: week, expense: weeklyExpenses, savings: weeklySavings, balance, ...categoryExpenses };
   });
 
   const last4Months = eachMonthOfInterval({
@@ -161,8 +197,15 @@ export default function DashboardPage() {
 
     const balanceEntryForMonth = balances.find(b => b.date && format(parseISO(b.date), 'yyyy-MM') === format(month, 'yyyy-MM'));
     const balance = balanceEntryForMonth ? balanceEntryForMonth.bank + balanceEntryForMonth.upi + balanceEntryForMonth.cash : 0;
+    
+    const categoryExpenses: {[key: string]: number} = {};
+    transactions.filter(t => t.type === 'expense' && t.date && format(parseISO(t.date), 'yyyy-MM') === format(month, 'yyyy-MM'))
+        .forEach(t => {
+            if(!categoryExpenses[t.category]) categoryExpenses[t.category] = 0;
+            categoryExpenses[t.category] += t.amount;
+        });
 
-    return { name: monthName, expense: monthlyExpenses, savings: monthlySavings, balance: balance };
+    return { name: monthName, expense: monthlyExpenses, savings: monthlySavings, balance: balance, ...categoryExpenses };
   });
   
   const renderChart = (data: any[], key: string, color: string, title: string) => (
@@ -198,6 +241,43 @@ export default function DashboardPage() {
         </CardContent>
      </Card>
   );
+
+  const renderCategoryChart = (data: any[], title: string) => (
+    <Card>
+       <CardHeader>
+           <CardTitle className="font-headline text-lg">{title}</CardTitle>
+       </CardHeader>
+       <CardContent>
+           <ChartContainer config={categoryChartConfig} className="min-h-[200px] w-full">
+             <ResponsiveContainer width="100%" height={200}>
+               <LineChart data={data} accessibilityLayer>
+                    <CartesianGrid vertical={false} />
+                    <XAxis
+                       dataKey="name"
+                       tickLine={false}
+                       axisLine={false}
+                       tickMargin={8}
+                   />
+                   <YAxis
+                       tickLine={false}
+                       axisLine={false}
+                       tickMargin={8}
+                       tickFormatter={(value) => `₹${value}`}
+                   />
+                   <RechartsTooltip 
+                       content={<ChartTooltipContent />}
+                       cursor={{fill: 'hsl(var(--muted))'}}
+                   />
+                   <ChartLegend content={<ChartLegendContent />} />
+                   {Object.keys(categoryChartConfig).map(category => (
+                     <Line key={category} type="monotone" dataKey={category} stroke={categoryChartConfig[category].color} fill={categoryChartConfig[category].color} strokeWidth={2} dot={{r: 4}} name={category} />
+                   ))}
+               </LineChart>
+             </ResponsiveContainer>
+           </ChartContainer>
+       </CardContent>
+    </Card>
+ );
 
   return (
     <>
@@ -288,32 +368,72 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+
+      <Card className="mt-8">
+        <CardHeader>
+          <CardTitle>Filters</CardTitle>
+          <CardDescription>Filter expenses by category and payment method.</CardDescription>
+        </CardHeader>
+        <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="category-filter">Category</Label>
+                 <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                  <SelectTrigger id="category-filter">
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {expenseCategories.map(category => (
+                      <SelectItem key={category} value={category}>{category}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="payment-mode-filter">Payment Mode</Label>
+                <Select value={selectedPaymentMode} onValueChange={setSelectedPaymentMode}>
+                  <SelectTrigger id="payment-mode-filter">
+                    <SelectValue placeholder="Select payment method" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {paymentMethods.map(method => (
+                        <SelectItem key={method} value={method}>{method}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+        </CardContent>
+      </Card>
       
-       <Tabs defaultValue="monthly" className="w-full mt-8">
+       <Tabs defaultValue="daily" className="w-full mt-8">
             <TabsList className="grid w-full grid-cols-3 md:w-[400px]">
                 <TabsTrigger value="daily">Daily</TabsTrigger>
                 <TabsTrigger value="weekly">Weekly</TabsTrigger>
                 <TabsTrigger value="monthly">Monthly</TabsTrigger>
             </TabsList>
             <TabsContent value="daily">
-                <div className="grid gap-4 mt-4 md:grid-cols-1 lg:grid-cols-3">
-                    {renderChart(dailyData, 'balance', 'hsl(var(--primary))', 'Balance Overview (Last 7 Days)')}
-                    {renderChart(dailyData, 'expense', 'hsl(var(--destructive))', 'Expense Overview (Last 7 Days)')}
-                    {renderChart(dailyData, 'savings', 'hsl(var(--accent))', 'Savings Overview (Last 7 Days)')}
+                <div className="grid gap-4 mt-4 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-4">
+                    {renderChart(dailyData, 'balance', 'hsl(var(--primary))', 'Balance (Last 7 Days)')}
+                    {renderChart(dailyData, 'expense', 'hsl(var(--destructive))', 'Expenses (Last 7 Days)')}
+                    {renderChart(dailyData, 'savings', 'hsl(var(--accent))', 'Savings (Last 7 Days)')}
+                    {renderCategoryChart(dailyData, 'Spending by Category (Last 7 Days)')}
                 </div>
             </TabsContent>
             <TabsContent value="weekly">
-                 <div className="grid gap-4 mt-4 md:grid-cols-1 lg:grid-cols-3">
-                    {renderChart(weeklyData, 'balance', 'hsl(var(--primary))', 'Balance Overview (Last 4 Weeks)')}
-                    {renderChart(weeklyData, 'expense', 'hsl(var(--destructive))', 'Expense Overview (Last 4 Weeks)')}
-                    {renderChart(weeklyData, 'savings', 'hsl(var(--accent))', 'Savings Overview (Last 4 Weeks)')}
+                 <div className="grid gap-4 mt-4 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-4">
+                    {renderChart(weeklyData, 'balance', 'hsl(var(--primary))', 'Balance (Last 4 Weeks)')}
+                    {renderChart(weeklyData, 'expense', 'hsl(var(--destructive))', 'Expenses (Last 4 Weeks)')}
+                    {renderChart(weeklyData, 'savings', 'hsl(var(--accent))', 'Savings (Last 4 Weeks)')}
+                    {renderCategoryChart(weeklyData, 'Spending by Category (Last 4 Weeks)')}
                 </div>
             </TabsContent>
             <TabsContent value="monthly">
-                 <div className="grid gap-4 mt-4 md:grid-cols-1 lg:grid-cols-3">
-                    {renderChart(monthlyData, 'balance', 'hsl(var(--primary))', 'Balance Overview (Last 4 Months)')}
-                    {renderChart(monthlyData, 'expense', 'hsl(var(--destructive))', 'Expense Overview (Last 4 Months)')}
-                    {renderChart(monthlyData, 'savings', 'hsl(var(--accent))', 'Savings Overview (Last 4 Months)')}
+                 <div className="grid gap-4 mt-4 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-4">
+                    {renderChart(monthlyData, 'balance', 'hsl(var(--primary))', 'Balance (Last 4 Months)')}
+                    {renderChart(monthlyData, 'expense', 'hsl(var(--destructive))', 'Expenses (Last 4 Months)')}
+                    {renderChart(monthlyData, 'savings', 'hsl(var(--accent))', 'Savings (Last 4 Months)')}
+                    {renderCategoryChart(monthlyData, 'Spending by Category (Last 4 Months)')}
                 </div>
             </TabsContent>
         </Tabs>
@@ -367,7 +487,7 @@ export default function DashboardPage() {
                         <ChartTooltipContent nameKey="amount" hideLabel />
                         <Pie data={expensesByCategory} dataKey="amount" nameKey="category" innerRadius={60}>
                             {expensesByCategory.map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill={categoryChartConfig[entry.category]?.color} />
+                                <Cell key={`cell-${index}`} fill={categoryChartConfig[entry.category as keyof typeof categoryChartConfig]?.color} />
                             ))}
                         </Pie>
                         <ChartLegend content={<ChartLegendContent />} />

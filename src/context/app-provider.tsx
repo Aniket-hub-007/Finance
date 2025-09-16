@@ -64,7 +64,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         fetch('/api/lending'),
         fetch('/api/budgets'),
         fetch('/api/balances'),
-      ]);
+      ])
 
       const transactionsData = await transactionsRes.json();
       if (transactionsData.success) setTransactions(transactionsData.data);

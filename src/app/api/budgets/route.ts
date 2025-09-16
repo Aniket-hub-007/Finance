@@ -18,7 +18,7 @@ export async function GET() {
   try {
     const collection = await getCollection();
     const budgets = await collection.find({}).toArray();
-    return NextResponse.json({ success: true, data: budgets.map(b => ({ ...b, id: b._id.toString() })) });
+    return NextResponse.json({ success: true, data: budgets.map(b => ({ ...b, id: b._id.toString(), _id: b._id.toString() })) });
   } catch (error) {
     console.error(error);
     return NextResponse.json({ success: false, error: 'Failed to fetch budgets' }, { status: 500 });

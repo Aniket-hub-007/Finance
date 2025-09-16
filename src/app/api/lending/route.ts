@@ -18,7 +18,7 @@ export async function GET() {
   try {
     const collection = await getCollection();
     const lending = await collection.find({}).toArray();
-    return NextResponse.json({ success: true, data: lending.map(l => ({ ...l, id: l._id.toString() })) });
+    return NextResponse.json({ success: true, data: lending.map(l => ({ ...l, id: l._id.toString(), _id: l._id.toString() })) });
   } catch (error) {
     console.error(error);
     return NextResponse.json({ success: false, error: 'Failed to fetch lending data' }, { status: 500 });

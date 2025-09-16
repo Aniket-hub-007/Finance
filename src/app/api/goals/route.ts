@@ -18,7 +18,7 @@ export async function GET() {
   try {
     const collection = await getCollection();
     const goals = await collection.find({}).toArray();
-    return NextResponse.json({ success: true, data: goals.map(g => ({ ...g, id: g._id.toString() })) });
+    return NextResponse.json({ success: true, data: goals.map(g => ({ ...g, id: g._id.toString(), _id: g._id.toString() })) });
   } catch (error) {
     console.error(error);
     return NextResponse.json({ success: false, error: 'Failed to fetch goals' }, { status: 500 });
